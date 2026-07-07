@@ -315,6 +315,80 @@ def handle_message(event):
         TextSendMessage(text=reply)
     )
 
+@app.get("/daily-summary")
+async def get_daily_summary():
+    """Generate daily summary of orders"""
+
+    if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
+        # DEMO MODE: Return sample summary
+        return {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "total_orders": 10,
+            "total_revenue": 4850,
+            "top_items": [
+                {"name": "ผัดไทย", "quantity": 12},
+                {"name": "ต้มยำกุ้ง", "quantity": 8},
+                {"name": "ข้าวผัด", "quantity": 7}
+            ],
+            "summary_message": "📊 สรุปยอดวันนี้ (Demo)\n\n📦 ออเดอร์: 10 รายการ\n💰 ยอดรวม: 4,850 บาท\n\n🔥 เมนูขายดี:\n1. ผัดไทย (12 จาน)\n2. ต้มยำกุ้ง (8 ถ้วย)\n3. ข้าวผัด (7 จาน)",
+            "mode": "DEMO"
+        }
+
+    # Fetch today's orders from sheet
+    try:
+        result = sheets_service.spreadsheets().values().get(
+            spreadsheetId=GOOGLE_SHEET_ID,
+            range='Orders!A:F'
+        ).execute()
+
+        rows = result.get('values', [])
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        # Filter today's orders
+        today_orders = [row for row in rows if row and row[0].startswith(today)]
+
+        total_orders = len(today_orders)
+        total_revenue = sum(float(row[4]) for row in today_orders if len(row) > 4)
+
+        # Count items
+        item_counts = {}
+        for row in today_orders:
+            if len(row) > 3:
+                items = row[3].split(", ")
+                for item_str in items:
+                    # Parse "ผัดไทย x2"
+                    parts = item_str.split(" x")
+                    item_name = parts[0]
+                    qty = int(parts[1]) if len(parts) > 1 else 1
+                    item_counts[item_name] = item_counts.get(item_name, 0) + qty
+
+        # Top 3 items
+        top_items = sorted(item_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+        top_items_list = [{"name": name, "quantity": qty} for name, qty in top_items]
+
+        # Build summary message (Thai)
+        summary_msg = f"📊 สรุปยอดวันนี้\n\n"
+        summary_msg += f"📦 ออเดอร์: {total_orders} รายการ\n"
+        summary_msg += f"💰 ยอดรวม: {total_revenue:,.0f} บาท\n\n"
+
+        if top_items_list:
+            summary_msg += "🔥 เมนูขายดี:\n"
+            for i, item in enumerate(top_items_list, 1):
+                summary_msg += f"{i}. {item['name']} ({item['quantity']} รายการ)\n"
+
+        return {
+            "date": today,
+            "total_orders": total_orders,
+            "total_revenue": total_revenue,
+            "top_items": top_items_list,
+            "summary_message": summary_msg,
+            "mode": "LIVE"
+        }
+
+    except Exception as e:
+        print(f"Error fetching daily summary: {e}")
+        return {"error": str(e)}
+
 @app.get("/health")
 async def health():
     """Health check"""
