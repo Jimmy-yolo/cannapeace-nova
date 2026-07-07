@@ -1,0 +1,333 @@
+#!/usr/bin/env python3
+"""
+Restaurant LINE-to-Excel Order Bridge (D2)
+===========================================
+2-Day Demo | Happy Path Only | Sample Data
+
+Receives LINE messages with restaurant orders (Thai/Chinese/English mixed),
+parses them using GPT-4, appends to Google Sheet.
+
+DEMO MODE: Works with sample data without real LINE webhook or API keys.
+"""
+
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from openai import OpenAI
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from datetime import datetime
+from pathlib import Path
+import json
+import os
+from typing import Dict, List, Optional
+from pydantic import BaseModel
+
+app = FastAPI(title="Restaurant LINE-to-Excel Bridge")
+
+# Configuration (with fallbacks for demo mode)
+LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET", "DEMO_MODE")
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "DEMO_MODE")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json")
+GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "DEMO_SHEET")
+
+# Load sample orders
+SAMPLE_ORDERS = json.loads(Path("sample_orders.json").read_text()) if Path("sample_orders.json").exists() else {"sample_orders": []}
+
+# Initialize services (with demo fallbacks)
+def get_openai_client():
+    if OPENAI_API_KEY:
+        return OpenAI(api_key=OPENAI_API_KEY)
+    return None
+
+def get_sheets_service():
+    if Path(GOOGLE_CREDENTIALS_PATH).exists():
+        credentials = service_account.Credentials.from_service_account_file(
+            GOOGLE_CREDENTIALS_PATH,
+            scopes=['https://www.googleapis.com/auth/spreadsheets']
+        )
+        return build('sheets', 'v4', credentials=credentials)
+    return None
+
+openai_client = get_openai_client()
+sheets_service = get_sheets_service()
+
+if LINE_CHANNEL_SECRET != "DEMO_MODE":
+    line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
+    handler = WebhookHandler(LINE_CHANNEL_SECRET)
+else:
+    line_bot_api = None
+    handler = None
+
+# Models
+class OrderItem(BaseModel):
+    name: str
+    quantity: int
+    price: Optional[float] = None
+
+class ParsedOrder(BaseModel):
+    customer_name: str
+    phone: str
+    items: List[OrderItem]
+    total: float
+    notes: Optional[str] = None
+    timestamp: str = None
+
+# Order Parser
+async def parse_order_message(message: str) -> ParsedOrder:
+    """Parse order message using GPT-4 or sample data"""
+
+    if not openai_client:
+        # DEMO MODE: Return sample parsed order
+        return ParsedOrder(
+            customer_name="Demo Customer",
+            phone="081-234-5678",
+            items=[
+                OrderItem(name="ผัดไทย", quantity=2, price=200),
+                OrderItem(name="ต้มยำกุ้ง", quantity=1, price=150)
+            ],
+            total=350,
+            timestamp=datetime.now().isoformat()
+        )
+
+    prompt = f"""Parse this restaurant order message into structured JSON.
+The message may be in Thai, Chinese, or English (or mixed).
+
+Order message:
+{message}
+
+Extract:
+- customer_name: Customer name
+- phone: Phone number (format: XXX-XXX-XXXX or similar)
+- items: List of {{name, quantity, price}} (price optional)
+- total: Total amount in THB
+- notes: Any special instructions (optional)
+
+Return JSON only, no markdown:
+{{
+  "customer_name": "...",
+  "phone": "...",
+  "items": [
+    {{"name": "...", "quantity": 2, "price": 100}}
+  ],
+  "total": 350,
+  "notes": "..."
+}}
+"""
+
+    response = openai_client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"}
+    )
+
+    parsed = json.loads(response.choices[0].message.content)
+    parsed["timestamp"] = datetime.now().isoformat()
+
+    return ParsedOrder(**parsed)
+
+# Google Sheets Integration
+async def append_to_sheet(order: ParsedOrder) -> bool:
+    """Append parsed order to Google Sheet"""
+
+    if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
+        # DEMO MODE: Just log
+        print(f"[DEMO] Would append to sheet: {order.model_dump()}")
+        return True
+
+    # Prepare row data
+    items_str = ", ".join([f"{item.name} x{item.quantity}" for item in order.items])
+
+    row = [
+        order.timestamp,
+        order.customer_name,
+        order.phone,
+        items_str,
+        order.total,
+        order.notes or ""
+    ]
+
+    body = {
+        'values': [row]
+    }
+
+    try:
+        sheets_service.spreadsheets().values().append(
+            spreadsheetId=GOOGLE_SHEET_ID,
+            range='Orders!A:F',
+            valueInputOption='USER_ENTERED',
+            insertDataOption='INSERT_ROWS',
+            body=body
+        ).execute()
+        return True
+    except Exception as e:
+        print(f"Error appending to sheet: {e}")
+        return False
+
+# Routes
+@app.get("/", response_class=HTMLResponse)
+async def index():
+    """Demo UI for testing order parsing"""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Restaurant LINE-to-Excel Bridge - Demo</title>
+        <meta charset="UTF-8">
+        <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 1000px; margin: 50px auto; padding: 20px; }
+            h1 { color: #06c755; }
+            .section { background: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 8px; }
+            textarea { width: 100%; min-height: 150px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; }
+            button { background: #06c755; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+            button:hover { background: #05b04b; }
+            .result { margin-top: 20px; white-space: pre-wrap; font-family: monospace; }
+            .sample { background: white; padding: 10px; margin: 10px 0; border-left: 3px solid #06c755; cursor: pointer; }
+            .sample:hover { background: #f9f9f9; }
+        </style>
+    </head>
+    <body>
+        <h1>🍜 Restaurant LINE-to-Excel Bridge</h1>
+        <p><strong>DEMO MODE</strong> | Parse Thai/Chinese/English restaurant orders</p>
+
+        <div class="section">
+            <h2>Sample Orders (Click to Test)</h2>
+            <div id="samples"></div>
+        </div>
+
+        <div class="section">
+            <h2>Or Enter Custom Order Message</h2>
+            <textarea id="orderText" placeholder="Paste order message here...&#10;&#10;Example:&#10;สั่งอาหาร:&#10;- ผัดไทย 2 จาน&#10;- ต้มยำกุ้ง 1 ถ้วย&#10;รวม 350 บาท&#10;ชื่อ: คุณสมชาย&#10;โทร: 081-234-5678"></textarea>
+            <button onclick="parseOrder()">Parse Order</button>
+            <div class="result" id="result"></div>
+        </div>
+
+        <script>
+            // Load samples
+            fetch('/samples')
+                .then(r => r.json())
+                .then(data => {
+                    const samplesDiv = document.getElementById('samples');
+                    data.sample_orders.forEach(order => {
+                        const div = document.createElement('div');
+                        div.className = 'sample';
+                        div.innerHTML = `<strong>Order ${order.id}:</strong><br>${order.message.substring(0, 100)}...`;
+                        div.onclick = () => {
+                            document.getElementById('orderText').value = order.message;
+                        };
+                        samplesDiv.appendChild(div);
+                    });
+                });
+
+            async function parseOrder() {
+                const text = document.getElementById('orderText').value;
+                if (!text) {
+                    alert('Please enter an order message');
+                    return;
+                }
+
+                document.getElementById('result').textContent = 'Parsing...';
+
+                try {
+                    const response = await fetch('/parse', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({message: text})
+                    });
+
+                    const data = await response.json();
+                    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                } catch (error) {
+                    document.getElementById('result').textContent = 'Error: ' + error.message;
+                }
+            }
+        </script>
+    </body>
+    </html>
+    """
+
+@app.get("/samples")
+async def get_samples():
+    """Return sample orders"""
+    return SAMPLE_ORDERS
+
+@app.post("/parse")
+async def parse_order(request: Request):
+    """Parse order message (for testing)"""
+    body = await request.json()
+    message = body.get("message", "")
+
+    if not message:
+        raise HTTPException(status_code=400, detail="No message provided")
+
+    parsed = await parse_order_message(message)
+    appended = await append_to_sheet(parsed)
+
+    return {
+        "parsed_order": parsed.model_dump(),
+        "appended_to_sheet": appended,
+        "mode": "DEMO" if not openai_client else "LIVE"
+    }
+
+@app.post("/webhook")
+async def webhook(request: Request):
+    """LINE webhook endpoint"""
+
+    if not handler:
+        return JSONResponse({"status": "DEMO_MODE", "message": "LINE webhook not configured"})
+
+    signature = request.headers.get('X-Line-Signature', '')
+    body = await request.body()
+
+    try:
+        handler.handle(body.decode(), signature)
+    except InvalidSignatureError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    return JSONResponse({"status": "ok"})
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    """Handle incoming LINE messages"""
+    message_text = event.message.text
+
+    # Parse order
+    parsed = await parse_order_message(message_text)
+    appended = await append_to_sheet(parsed)
+
+    # Reply to user
+    reply = f"✅ รับออเดอร์แล้วค่ะ!\n\n"
+    reply += f"👤 {parsed.customer_name}\n"
+    reply += f"📞 {parsed.phone}\n"
+    reply += f"💰 รวม {parsed.total} บาท\n\n"
+    reply += "รายการอาหาร:\n"
+    for item in parsed.items:
+        reply += f"• {item.name} x{item.quantity}\n"
+
+    if appended:
+        reply += "\n📊 บันทึกในระบบเรียบร้อย"
+
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=reply)
+    )
+
+@app.get("/health")
+async def health():
+    """Health check"""
+    return {
+        "status": "ok",
+        "mode": "DEMO" if not openai_client else "LIVE",
+        "line_webhook": "configured" if handler else "demo",
+        "google_sheets": "configured" if sheets_service else "demo"
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    print("🚀 Starting Restaurant LINE-to-Excel Bridge (Demo)")
+    print(f"📍 Open: http://localhost:8001")
+    print(f"🔧 Mode: {'DEMO' if not openai_client else 'LIVE'}")
+    uvicorn.run(app, host="0.0.0.0", port=8001)

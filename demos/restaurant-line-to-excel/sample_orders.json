@@ -1,0 +1,146 @@
+{
+  "sample_orders": [
+    {
+      "id": 1,
+      "message": "สวัสดีค่ะ สั่งอาหาร:\n- ผัดไทย 2 จาน\n- ต้มยำกุ้ง 1 ถ้วย\n- ข้าวผัด 1 จาน\nรวม 350 บาท\nชื่อ: คุณสมชาย\nโทร: 081-234-5678",
+      "expected": {
+        "customer_name": "คุณสมชาย",
+        "phone": "081-234-5678",
+        "items": [
+          {"name": "ผัดไทย", "quantity": 2, "price": null},
+          {"name": "ต้มยำกุ้ง", "quantity": 1, "price": null},
+          {"name": "ข้าวผัด", "quantity": 1, "price": null}
+        ],
+        "total": 350
+      }
+    },
+    {
+      "id": 2,
+      "message": "Order please:\n炒饭 x3\n冬阴功汤 x1\nTotal: 450฿\nName: Chen Wei\n电话: 092-111-2222",
+      "expected": {
+        "customer_name": "Chen Wei",
+        "phone": "092-111-2222",
+        "items": [
+          {"name": "炒饭 (ข้าวผัด)", "quantity": 3, "price": null},
+          {"name": "冬阴功汤 (ต้มยำกุ้ง)", "quantity": 1, "price": null}
+        ],
+        "total": 450
+      }
+    },
+    {
+      "id": 3,
+      "message": "สั่งนะคะ\nแกงเขียวหวาน 2\nข้าวเหนียวมะม่วง 1\nน้ำมะพร้าว 3\nรวม 520 บาท\nคุณแนน 086-555-7777",
+      "expected": {
+        "customer_name": "คุณแนน",
+        "phone": "086-555-7777",
+        "items": [
+          {"name": "แกงเขียวหวาน", "quantity": 2, "price": null},
+          {"name": "ข้าวเหนียวมะม่วง", "quantity": 1, "price": null},
+          {"name": "น้ำมะพร้าว", "quantity": 3, "price": null}
+        ],
+        "total": 520
+      }
+    },
+    {
+      "id": 4,
+      "message": "Hi! 订单:\n泰式炒面 (Pad Thai) x2 = 200฿\n芒果糯米饭 x1 = 120฿\n椰子水 x2 = 80฿\nTotal: 400 baht\nLisa Wang / 095-888-9999",
+      "expected": {
+        "customer_name": "Lisa Wang",
+        "phone": "095-888-9999",
+        "items": [
+          {"name": "Pad Thai", "quantity": 2, "price": 200},
+          {"name": "芒果糯米饭", "quantity": 1, "price": 120},
+          {"name": "椰子水", "quantity": 2, "price": 80}
+        ],
+        "total": 400
+      }
+    },
+    {
+      "id": 5,
+      "message": "ขอสั่งอาหารค่ะ\n1. ส้มตำไทย 1 ที่\n2. ไก่ย่าง 1 ตัว\n3. ข้าวเหนียว 2 ห่อ\n4. น้ำส้ม 2 แก้ว\nราคารวม 380 บาท\nส่งที่: บ้านเลขที่ 123/45\nนางสาวมานี 089-333-4444",
+      "expected": {
+        "customer_name": "นางสาวมานี",
+        "phone": "089-333-4444",
+        "items": [
+          {"name": "ส้มตำไทย", "quantity": 1, "price": null},
+          {"name": "ไก่ย่าง", "quantity": 1, "price": null},
+          {"name": "ข้าวเหนียว", "quantity": 2, "price": null},
+          {"name": "น้ำส้ม", "quantity": 2, "price": null}
+        ],
+        "total": 380
+      }
+    },
+    {
+      "id": 6,
+      "message": "点菜:\n海鲜炒饭 3份 - 450泰铢\n冬阴功 2碗 - 280泰铢\n泰式奶茶 4杯 - 160泰铢\n合计: 890฿\n王先生 Tel: 097-222-3333",
+      "expected": {
+        "customer_name": "王先生",
+        "phone": "097-222-3333",
+        "items": [
+          {"name": "海鲜炒饭", "quantity": 3, "price": 450},
+          {"name": "冬阴功", "quantity": 2, "price": 280},
+          {"name": "泰式奶茶", "quantity": 4, "price": 160}
+        ],
+        "total": 890
+      }
+    },
+    {
+      "id": 7,
+      "message": "Order for delivery:\nMassaman Curry x2\nSpring Rolls x4\nCoconut Ice Cream x2\nTotal: 650 THB\nMr. John Smith\n+66 88-444-5555",
+      "expected": {
+        "customer_name": "Mr. John Smith",
+        "phone": "+66 88-444-5555",
+        "items": [
+          {"name": "Massaman Curry", "quantity": 2, "price": null},
+          {"name": "Spring Rolls", "quantity": 4, "price": null},
+          {"name": "Coconut Ice Cream", "quantity": 2, "price": null}
+        ],
+        "total": 650
+      }
+    },
+    {
+      "id": 8,
+      "message": "สั่งด่วนค่ะ!\nข้าวมันไก่ 5 ชุด @ 50฿ = 250฿\nน้ำเปล่า 5 ขวด @ 10฿ = 50฿\nรวมทั้งหมด 300 บาท\nคุณดาว 084-777-8888\nเก็บเงินปลายทาง",
+      "expected": {
+        "customer_name": "คุณดาว",
+        "phone": "084-777-8888",
+        "items": [
+          {"name": "ข้าวมันไก่", "quantity": 5, "price": 250},
+          {"name": "น้ำเปล่า", "quantity": 5, "price": 50}
+        ],
+        "total": 300
+      }
+    },
+    {
+      "id": 9,
+      "message": "订单 #001\n客户: 张丽 (093-666-7777)\n\n菜品:\n- 椰汁鸡 x1 = 180฿\n- 菠萝炒饭 x2 = 240฿\n- 泰式春卷 x6 = 120฿\n- 芒果冰沙 x2 = 100฿\n\n总计: 640泰铢\n备注: 不要辣",
+      "expected": {
+        "customer_name": "张丽",
+        "phone": "093-666-7777",
+        "items": [
+          {"name": "椰汁鸡", "quantity": 1, "price": 180},
+          {"name": "菠萝炒饭", "quantity": 2, "price": 240},
+          {"name": "泰式春卷", "quantity": 6, "price": 120},
+          {"name": "芒果冰沙", "quantity": 2, "price": 100}
+        ],
+        "total": 640,
+        "notes": "不要辣"
+      }
+    },
+    {
+      "id": 10,
+      "message": "สั่งอาหารเย็นนะคะ\n📋 รายการ:\n✓ ผัดกะเพราหมูสับ 3 จาน\n✓ ไข่ดาว 3 ฟอง\n✓ น้ำแข็ง 1 ถุง\n\n💰 รวม: 270 บาท\n👤 ชื่อ: พี่นก\n📞 โทร: 091-999-0000\n⏰ เวลา: 18:00 น.",
+      "expected": {
+        "customer_name": "พี่นก",
+        "phone": "091-999-0000",
+        "items": [
+          {"name": "ผัดกะเพราหมูสับ", "quantity": 3, "price": null},
+          {"name": "ไข่ดาว", "quantity": 3, "price": null},
+          {"name": "น้ำแข็ง", "quantity": 1, "price": null}
+        ],
+        "total": 270,
+        "notes": "เวลา: 18:00 น."
+      }
+    }
+  ]
+}
