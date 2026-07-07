@@ -31,8 +31,7 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 # API clients
 try:
-    from google.cloud import vision
-    from openai import OpenAI
+    import anthropic
     from reportlab.lib.pagesizes import letter, A4
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -51,26 +50,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def get_vision_client():
-    """Google Cloud Vision client"""
+def get_anthropic_client():
+    """Anthropic Claude client"""
     if not DEPS_OK:
         return None
-    try:
-        return vision.ImageAnnotatorClient()
-    except Exception as e:
-        logger.error(f"Vision client error: {e}")
-        return None
-
-
-def get_openai_client():
-    """OpenAI client"""
-    if not DEPS_OK:
-        return None
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
-        logger.error("OPENAI_API_KEY not set")
+        logger.error("ANTHROPIC_API_KEY not set")
         return None
-    return OpenAI(api_key=api_key)
+    return anthropic.Anthropic(api_key=api_key)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -383,40 +371,77 @@ async def translate_document(file: UploadFile = File(...)):
 
 
 async def extract_chinese_text(image_path: Path, content: bytes) -> str:
-    """Google Cloud Vision OCR"""
-    client = get_vision_client()
-    
-    # DEMO fallback: use sample text if no Vision client
+    """Claude Vision API for OCR - extract Chinese text from image"""
+    client = get_anthropic_client()
+
+    # DEMO fallback: use sample text if no Claude client
     if not client:
-        logger.warning("Vision client unavailable, using sample text")
+        logger.warning("Claude client unavailable, using sample text")
         return SAMPLE_CHINESE_TEXT
-    
+
     try:
-        image = vision.Image(content=content)
-        response = client.text_detection(image=image)
-        
-        if response.error.message:
-            raise Exception(response.error.message)
-        
-        texts = response.text_annotations
-        if texts:
-            return texts[0].description
-        
-        return SAMPLE_CHINESE_TEXT  # Fallback
+        # Encode image as base64
+        import base64
+        image_data = base64.standard_b64encode(content).decode("utf-8")
+
+        # Determine media type from file extension
+        file_ext = image_path.suffix.lower()
+        if file_ext in ['.jpg', '.jpeg']:
+            media_type = "image/jpeg"
+        elif file_ext == '.png':
+            media_type = "image/png"
+        elif file_ext == '.gif':
+            media_type = "image/gif"
+        elif file_ext == '.webp':
+            media_type = "image/webp"
+        else:
+            media_type = "image/jpeg"  # Default
+
+        # Use Claude to extract Chinese text from image
+        response = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": media_type,
+                                "data": image_data,
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": "Extract ALL Chinese text from this image, preserving the structure and layout. Return only the extracted text without any explanations or commentary."
+                        }
+                    ],
+                }
+            ],
+        )
+
+        extracted_text = response.content[0].text
+
+        if extracted_text and len(extracted_text.strip()) > 0:
+            return extracted_text
+
+        return SAMPLE_CHINESE_TEXT  # Fallback if no text detected
     except Exception as e:
         logger.error(f"OCR error: {e}")
         return SAMPLE_CHINESE_TEXT
 
 
 async def translate_to_thai(chinese_text: str) -> tuple[str, dict]:
-    """GPT-4 translation with key field extraction"""
-    client = get_openai_client()
-    
+    """Claude translation with key field extraction"""
+    client = get_anthropic_client()
+
     # DEMO fallback
     if not client:
-        logger.warning("OpenAI client unavailable, using sample translation")
+        logger.warning("Claude client unavailable, using sample translation")
         return SAMPLE_THAI_TEXT, SAMPLE_KEY_FIELDS
-    
+
     try:
         prompt = f"""Translate this Chinese business document to Thai. Also extract and highlight these key fields:
 - Total amount (总金额/金额/总计)
@@ -436,16 +461,26 @@ Respond with JSON:
     }}
 }}
 """
-        
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
+
+        response = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
         )
-        
+
         import json
-        result = json.loads(response.choices[0].message.content)
-        
+        response_text = response.content[0].text
+
+        # Claude may wrap JSON in markdown code blocks, strip them
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]  # Remove ```json
+        if response_text.startswith("```"):
+            response_text = response_text[3:]  # Remove ```
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]  # Remove trailing ```
+
+        result = json.loads(response_text.strip())
+
         return result["thai_translation"], result["key_fields"]
     except Exception as e:
         logger.error(f"Translation error: {e}")
