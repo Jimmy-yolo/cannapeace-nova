@@ -90,12 +90,12 @@ Bot reply (instant):
 - No commitment
 
 ### Option 2: Monthly Subscription (RECOMMENDED)
-- **499-999 baht/month** unlimited
+- **1,500-3,000 baht/month** unlimited
 - Good for: 50+ orders/month
-- Breaks even at 50-100 orders
+- Breaks even at 150-300 orders
 
 ### Setup Fee
-- **3,000-5,000 baht** one-time
+- **5,000-10,000 baht** one-time
 - Includes:
   - LINE bot setup
   - Google Sheet template

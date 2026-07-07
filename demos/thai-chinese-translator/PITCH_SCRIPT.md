@@ -23,12 +23,18 @@
 - Ask staff with basic Chinese to manually translate (2-4 hours)
 
 ### 2. Show Solution (30 seconds)
-"Watch this." *(Open demo URL on phone)*
+**N6 REORDERED:** Use prospect's OWN document for demo
 
-1. Upload Chinese invoice photo
-2. Click "Translate"
-3. **Wait 30-60 seconds** *(show loading spinner)*
-4. Download bilingual PDF
+"Do you have a Chinese supplier invoice on your phone right now? Let me translate it live."
+
+1. Ask prospect to send their document (LINE/WhatsApp)
+2. Upload to demo URL on your phone/laptop
+3. Click "Translate"
+4. **Wait 30-60 seconds** *(show loading spinner, explain what's happening)*
+5. Download bilingual PDF
+6. **Hand them the result** - their own document, translated
+
+**Fallback if no document:** Use pre-loaded sample invoice
 
 ### 3. Show Result (45 seconds)
 *(Open generated PDF on screen)*

@@ -175,7 +175,7 @@ async def index():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Restaurant LINE-to-Excel Bridge - Demo</title>
+        <title>Restaurant LINE-to-Excel Bridge - DEMO MODE</title>
         <meta charset="UTF-8">
         <style>
             body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 1000px; margin: 50px auto; padding: 20px; }
@@ -191,7 +191,10 @@ async def index():
     </head>
     <body>
         <h1>🍜 Restaurant LINE-to-Excel Bridge</h1>
-        <p><strong>DEMO MODE</strong> | Parse Thai/Chinese/English restaurant orders</p>
+        <div style="background: #fff3cd; padding: 10px; margin: 10px 0; border-left: 4px solid #ffc107; border-radius: 4px;">
+            <strong>⚠️ DEMO MODE:</strong> Using sample data. Connect LINE bot + Google Sheets for live operation.
+        </div>
+        <p><strong>Parse Thai/Chinese/English restaurant orders automatically</strong></p>
 
         <div class="section">
             <h2>Sample Orders (Click to Test)</h2>
