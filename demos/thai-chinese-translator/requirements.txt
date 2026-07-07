@@ -1,0 +1,7 @@
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+google-cloud-vision==3.10.1
+openai==1.59.8
+reportlab==4.2.5
+pillow==11.2.0
