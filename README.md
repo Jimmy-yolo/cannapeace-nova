@@ -1,8 +1,9 @@
-# MOON — Track A: Income Sprint
+# NOVA — Track A: Income Sprint
 
 **Status:** Week 0 (Setup)
 **Goal:** $1–3K/month by Month 3 via AI automation services
 **Parent Plan:** `/Users/jimmy/CannaPeace/MASTER_PLAN (1).md`
+**Sister Project:** MOON (Track B - Trading System)
 
 ---
 
@@ -82,7 +83,7 @@ You (Jimmy) + Claude Code sell **outcomes to small businesses**:
 ## Directory Structure
 
 ```
-cannapeace-moon/
+cannapeace-nova/
 ├── README.md                    ← you are here
 ├── SHARED_MEMORY.md             ← weekly metrics, evidence log
 ├── clients/                     ← one folder per client project
@@ -113,11 +114,11 @@ cannapeace-moon/
 
 ---
 
-## Interface with Track B (QRevo)
+## Interface with Track B (MOON Trading System)
 
-- **Money:** ≥50% of net Track-A income → D2 capital base, transferred monthly
-- **Time:** Paid projects win; QRevo weekly review is 30 min and movable
-- **Skills:** Every bot/pipeline/dashboard you build compounds QRevo capability
+- **Money:** ≥50% of net Track-A income → MOON D2 capital base, transferred monthly
+- **Time:** Paid projects win; MOON weekly review is 30 min and movable
+- **Skills:** Every bot/pipeline/dashboard you build compounds MOON capability
 
 ---
 
