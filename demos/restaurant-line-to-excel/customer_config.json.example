@@ -1,0 +1,42 @@
+{
+  "business_name": "Your Restaurant Name",
+  "business_name_thai": "ชื่อร้านของคุณ",
+  "business_name_chinese": "您的餐厅名称",
+
+  "supported_languages": ["thai", "chinese", "english"],
+
+  "menu_items": [
+    {"name_thai": "ผัดไทย", "name_chinese": "泰式炒面", "name_english": "Pad Thai", "price": 100},
+    {"name_thai": "ต้มยำกุ้ง", "name_chinese": "冬阴功汤", "name_english": "Tom Yum Goong", "price": 150},
+    {"name_thai": "ข้าวผัด", "name_chinese": "炒饭", "name_english": "Fried Rice", "price": 80},
+    {"name_thai": "แกงเขียวหวาน", "name_chinese": "绿咖喱", "name_english": "Green Curry", "price": 120},
+    {"name_thai": "ข้าวเหนียวมะม่วง", "name_chinese": "芒果糯米饭", "name_english": "Mango Sticky Rice", "price": 80},
+    {"name_thai": "ส้มตำไทย", "name_chinese": "青木瓜沙拉", "name_english": "Papaya Salad", "price": 60}
+  ],
+
+  "timezone": "Asia/Bangkok",
+  "currency": "THB",
+  "currency_symbol": "฿",
+
+  "templates": {
+    "daily_summary_thai": "📊 สรุปยอดวันนี้\n\n📦 ออเดอร์: {total_orders} รายการ\n💰 ยอดรวม: {total_revenue:,.0f} บาท\n\n🔥 เมนูขายดี:\n{top_items}",
+    "daily_summary_english": "📊 Daily Summary\n\n📦 Orders: {total_orders}\n💰 Total: {currency}{total_revenue:,.0f}\n\n🔥 Top Items:\n{top_items}",
+    "daily_summary_chinese": "📊 每日总结\n\n📦 订单: {total_orders} 份\n💰 总计: {total_revenue:,.0f} 泰铢\n\n🔥 热门菜品:\n{top_items}",
+
+    "order_received_thai": "✅ รับออเดอร์แล้วค่ะ!\n\n📝 รายการ: {items}\n💰 รวม: {total} บาท\n📊 บันทึกในระบบเรียบร้อย",
+    "order_received_english": "✅ Order received!\n\n📝 Items: {items}\n💰 Total: {currency}{total}\n📊 Recorded successfully",
+    "order_received_chinese": "✅ 已收到订单！\n\n📝 项目: {items}\n💰 总计: {total} 泰铢\n📊 已成功记录"
+  },
+
+  "parsing_config": {
+    "require_phone": true,
+    "require_customer_name": true,
+    "default_language": "thai",
+    "auto_detect_language": true
+  },
+
+  "demo_mode": {
+    "enabled": true,
+    "sample_data_file": "sample_orders.json"
+  }
+}
