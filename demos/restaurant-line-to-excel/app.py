@@ -305,15 +305,28 @@ async def webhook(request: Request):
 def handle_message(event):
     """Handle incoming LINE messages (note: LINE bot SDK doesn't support async handlers)"""
     try:
+        import asyncio
         message_text = event.message.text
 
-        # Note: LINE bot SDK handlers are synchronous and cannot use await
-        # In production, you would need to use asyncio.run() or move to async pattern
-        # For now, we provide a basic response without parsing
+        # Parse order using Claude AI
+        parsed_order = asyncio.run(parse_order_message(message_text))
 
-        reply = f"✅ รับออเดอร์แล้วค่ะ!\n\n"
-        reply += f"📝 Message: {message_text}\n"
-        reply += "📊 บันทึกในระบบเรียบร้อย"
+        # Load customer config for templates
+        config = json.loads(Path("customer_config.json").read_text())
+        template = config["templates"]["order_received_thai"]
+
+        # Format items for display
+        items_str = ", ".join([f"{item.name} x{item.quantity}" for item in parsed_order.items])
+
+        # Format reply using template
+        reply = template.format(
+            items=items_str,
+            total=f"{parsed_order.total:,.0f}",
+            currency=config.get("currency_symbol", "฿")
+        )
+
+        # Append to Google Sheets (async call needs to run in event loop)
+        asyncio.run(append_to_sheet(parsed_order))
 
         if line_bot_api:
             line_bot_api.reply_message(
@@ -322,6 +335,12 @@ def handle_message(event):
             )
     except Exception as e:
         print(f"Error handling message: {e}")
+        # Send error message to user
+        if line_bot_api:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="❌ ขออภัยค่ะ เกิดข้อผิดพลาดในการประมวลผล")
+            )
 
 # Register handler only if LINE is configured
 if handler:
