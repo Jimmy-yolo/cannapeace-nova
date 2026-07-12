@@ -90,8 +90,8 @@ class ParsedOrder(BaseModel):
     timestamp: str = None
 
 # Order Parser
-async def parse_order_message(message: str) -> ParsedOrder:
-    """Parse order message using Claude or sample data"""
+def parse_order_message_sync(message: str) -> ParsedOrder:
+    """Parse order message using Claude or sample data (synchronous)"""
 
     if not anthropic_client:
         # DEMO MODE: Return sample parsed order
@@ -99,24 +99,32 @@ async def parse_order_message(message: str) -> ParsedOrder:
             customer_name="Demo Customer",
             phone="081-234-5678",
             items=[
-                OrderItem(name="ผัดไทย", quantity=2, price=200),
-                OrderItem(name="ต้มยำกุ้ง", quantity=1, price=150)
+                OrderItem(name="Thai Stick", quantity=5, price=400),
+                OrderItem(name="Mango Kush", quantity=3, price=350)
             ],
-            total=350,
+            total=2450,
             timestamp=datetime.now().isoformat()
         )
 
-    prompt = f"""Parse this restaurant order message into structured JSON.
-The message may be in Thai, Chinese, or English (or mixed).
+    prompt = f"""Parse this cannabis order message into structured JSON.
+The message may be in Thai or English (or mixed).
 
 Order message:
 {message}
 
 Extract:
-- customer_name: Customer name
-- phone: Phone number (format: XXX-XXX-XXXX or similar)
-- items: List of {{name, quantity, price}} (price optional)
-- total: Total amount in THB
+- customer_name: Customer name (if not provided, use "Customer")
+- phone: Phone number (if not provided, use "Not provided")
+- items: List of {{name, quantity, price_per_gram}}
+  - quantity should be in grams
+  - price_per_gram: use these prices:
+    - Thai Stick: 400 THB/g
+    - Mango Kush: 350 THB/g
+    - Northern Lights: 450 THB/g
+    - Super Lemon Haze: 420 THB/g
+    - Blueberry Kush: 380 THB/g
+    - Pineapple Express: 400 THB/g
+- total: Total amount in THB (sum of quantity * price_per_gram for all items)
 - notes: Any special instructions (optional)
 
 Return JSON only, no markdown:
@@ -124,10 +132,10 @@ Return JSON only, no markdown:
   "customer_name": "...",
   "phone": "...",
   "items": [
-    {{"name": "...", "quantity": 2, "price": 100}}
+    {{"name": "Thai Stick", "quantity": 5, "price": 2000}}
   ],
-  "total": 350,
-  "notes": "..."
+  "total": 2000,
+  "notes": ""
 }}
 """
 
@@ -153,8 +161,8 @@ Return JSON only, no markdown:
     return ParsedOrder(**parsed)
 
 # Google Sheets Integration
-async def append_to_sheet(order: ParsedOrder) -> bool:
-    """Append parsed order to Google Sheet"""
+def append_to_sheet_sync(order: ParsedOrder) -> bool:
+    """Append parsed order to Google Sheet (synchronous)"""
 
     if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
         # DEMO MODE: Just log
@@ -162,7 +170,7 @@ async def append_to_sheet(order: ParsedOrder) -> bool:
         return True
 
     # Prepare row data
-    items_str = ", ".join([f"{item.name} x{item.quantity}" for item in order.items])
+    items_str = ", ".join([f"{item.name} x{item.quantity}g" for item in order.items])
 
     row = [
         order.timestamp,
@@ -291,8 +299,8 @@ async def parse_order(request: Request):
     if not message:
         raise HTTPException(status_code=400, detail="No message provided")
 
-    parsed = await parse_order_message(message)
-    appended = await append_to_sheet(parsed)
+    parsed = parse_order_message_sync(message)
+    appended = append_to_sheet_sync(parsed)
 
     return {
         "parsed_order": parsed.model_dump(),
