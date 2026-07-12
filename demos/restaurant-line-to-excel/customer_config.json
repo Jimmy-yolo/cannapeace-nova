@@ -6,7 +6,7 @@
   "supported_languages": ["thai", "english"],
 
   "products": [
-    {"name_english": "Capjunky", "name_thai": "แคปจั๊งกี้", "strain_type": "Hybrid", "price_per_gram": 450, "thc": "28%", "description": "Relaxing hybrid with sweet, earthy flavors", "image": "capjunky.jpg"},
+    {"name_english": "Cap Junky", "name_thai": "แคปจั๊งกี้", "strain_type": "Hybrid", "price_per_gram": 450, "thc": "28%", "description": "Relaxing hybrid with sweet, earthy flavors", "image": "capjunky.jpg"},
     {"name_english": "Alien Marker", "name_thai": "เอเลี่ยนมาร์คเกอร์", "strain_type": "Indica", "price_per_gram": 450, "thc": "26%", "description": "Potent indica for deep relaxation", "image": "alien_marker.jpg"},
     {"name_english": "Trop Cherry", "name_thai": "ทรอปเชอร์รี่", "strain_type": "Hybrid", "price_per_gram": 450, "thc": "27%", "description": "Fruity hybrid with tropical cherry notes", "image": "trop_cherry.jpg"},
     {"name_english": "Gogurtz", "name_thai": "โกเกิร์ตซ์", "strain_type": "Hybrid", "price_per_gram": 450, "thc": "29%", "description": "Creamy, dessert-like hybrid strain", "image": "gogurtz.jpg"},
