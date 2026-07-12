@@ -32,6 +32,7 @@ LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET", "DEMO_MODE")
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "DEMO_MODE")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json")
+GOOGLE_CREDENTIALS_BASE64 = os.getenv("GOOGLE_CREDENTIALS_BASE64")
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "DEMO_SHEET")
 
 # Load sample orders
@@ -44,6 +45,18 @@ def get_anthropic_client():
     return None
 
 def get_sheets_service():
+    # Try base64-encoded credentials first (for Railway deployment)
+    if GOOGLE_CREDENTIALS_BASE64:
+        import base64
+        creds_json = base64.b64decode(GOOGLE_CREDENTIALS_BASE64).decode('utf-8')
+        creds_dict = json.loads(creds_json)
+        credentials = service_account.Credentials.from_service_account_info(
+            creds_dict,
+            scopes=['https://www.googleapis.com/auth/spreadsheets']
+        )
+        return build('sheets', 'v4', credentials=credentials)
+
+    # Fall back to file path
     if Path(GOOGLE_CREDENTIALS_PATH).exists():
         credentials = service_account.Credentials.from_service_account_file(
             GOOGLE_CREDENTIALS_PATH,
