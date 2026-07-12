@@ -180,7 +180,7 @@ async def append_to_sheet(order: ParsedOrder) -> bool:
     try:
         sheets_service.spreadsheets().values().append(
             spreadsheetId=GOOGLE_SHEET_ID,
-            range='Orders!A:F',
+            range='Sheet1!A:F',  # Use default sheet name
             valueInputOption='USER_ENTERED',
             insertDataOption='INSERT_ROWS',
             body=body
@@ -188,7 +188,9 @@ async def append_to_sheet(order: ParsedOrder) -> bool:
         return True
     except Exception as e:
         print(f"Error appending to sheet: {e}")
-        return False
+        import traceback
+        traceback.print_exc()
+        raise  # Re-raise so /parse endpoint shows the error
 
 # Routes
 @app.get("/", response_class=HTMLResponse)
