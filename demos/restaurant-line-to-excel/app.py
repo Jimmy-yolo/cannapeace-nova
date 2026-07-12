@@ -10,7 +10,7 @@ parses them using GPT-4, appends to Google Sheet.
 DEMO MODE: Works with sample data without real LINE webhook or API keys.
 """
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -299,7 +299,7 @@ async def parse_order(request: Request):
     }
 
 @app.post("/webhook")
-async def webhook(request: Request):
+async def webhook(request: Request, background_tasks: BackgroundTasks):
     """LINE webhook endpoint"""
 
     if not handler:
@@ -316,33 +316,89 @@ async def webhook(request: Request):
     return JSONResponse({"status": "ok"})
 
 def handle_message(event):
-    """Handle incoming LINE messages (note: LINE bot SDK doesn't support async handlers)"""
+    """Handle incoming LINE messages (sync handler for LINE SDK)"""
     try:
-        import asyncio
-        import nest_asyncio
-        nest_asyncio.apply()  # Allow nested event loops
-
         message_text = event.message.text
 
-        # Parse order using Claude AI
-        parsed_order = asyncio.run(parse_order_message(message_text))
+        # Use synchronous anthropic client (blocking call)
+        if not anthropic_client:
+            if line_bot_api:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="❌ DEMO MODE - Claude AI not configured")
+                )
+            return
+
+        # Synchronous Claude API call
+        prompt = f"""Parse this cannabis order message into structured JSON.
+
+Order message:
+{message_text}
+
+Extract:
+- customer_name: Customer name (if not provided, use "Customer")
+- phone: Phone number (if not provided, use "Not provided")
+- items: List of {{name, quantity, price_per_gram}}
+- total: Total amount in THB
+- notes: Any special instructions (optional)
+
+Return JSON only, no markdown."""
+
+        response = anthropic_client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        response_text = response.content[0].text.strip()
+
+        # Strip markdown if present
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+
+        parsed = json.loads(response_text.strip())
 
         # Load customer config for templates
         config = json.loads(Path("customer_config.json").read_text())
         template = config["templates"]["order_received_thai"]
 
         # Format items for display
-        items_str = ", ".join([f"{item.name} x{item.quantity}" for item in parsed_order.items])
+        items_str = ", ".join([f"{item['name']} x{item['quantity']}" for item in parsed["items"]])
 
         # Format reply using template
         reply = template.format(
             items=items_str,
-            total=f"{parsed_order.total:,.0f}",
+            total=f"{parsed['total']:,.0f}",
             currency=config.get("currency_symbol", "฿")
         )
 
-        # Append to Google Sheets (async call needs to run in event loop)
-        asyncio.run(append_to_sheet(parsed_order))
+        # Log order to Google Sheets (synchronous)
+        if sheets_service and GOOGLE_SHEET_ID != "DEMO_SHEET":
+            try:
+                items_str_sheet = ", ".join([f"{item['name']} x{item['quantity']}" for item in parsed["items"]])
+                row = [
+                    datetime.now().isoformat(),
+                    parsed.get("customer_name", "Customer"),
+                    parsed.get("phone", "Not provided"),
+                    items_str_sheet,
+                    parsed["total"],
+                    parsed.get("notes", "")
+                ]
+
+                body = {'values': [row]}
+                sheets_service.spreadsheets().values().append(
+                    spreadsheetId=GOOGLE_SHEET_ID,
+                    range='Sheet1!A:F',
+                    valueInputOption='USER_ENTERED',
+                    insertDataOption='INSERT_ROWS',
+                    body=body
+                ).execute()
+            except Exception as sheet_error:
+                print(f"Sheet error: {sheet_error}")
 
         if line_bot_api:
             line_bot_api.reply_message(
