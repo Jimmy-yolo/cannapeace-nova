@@ -75,10 +75,6 @@ else:
     line_bot_api = None
     handler = None
 
-# Conversation Memory (user_id -> conversation history)
-conversation_memory = {}
-MAX_CONVERSATION_HISTORY = 10  # Keep last 10 messages per user
-
 # Models
 class OrderItem(BaseModel):
     name: str
@@ -330,12 +326,11 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
     return JSONResponse({"status": "ok"})
 
 def handle_message(event):
-    """Handle incoming LINE messages - Conversational AI version"""
+    """Handle incoming LINE messages (sync handler for LINE SDK)"""
     try:
         message_text = event.message.text
-        user_id = event.source.user_id if hasattr(event.source, 'user_id') else "demo_user"
 
-        # Check if Claude is configured
+        # Use synchronous anthropic client (blocking call)
         if not anthropic_client:
             if line_bot_api:
                 line_bot_api.reply_message(
@@ -344,134 +339,91 @@ def handle_message(event):
                 )
             return
 
-        # Load conversation history
-        if user_id not in conversation_memory:
-            conversation_memory[user_id] = []
+        # Synchronous Claude API call
+        prompt = f"""Parse this cannabis order message into structured JSON.
 
-        conversation_history = conversation_memory[user_id]
-
-        # Build conversation context
-        history_text = ""
-        if conversation_history:
-            history_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_history[-MAX_CONVERSATION_HISTORY:]])
-
-        # Load product catalog
-        config = json.loads(Path("customer_config.json").read_text())
-        products_info = "\n".join([
-            f"- {p['name_english']} ({p['name_thai']}): {p['price_per_gram']}฿/g - {p['strain_type']} {p['thc']} THC"
-            for p in config["products"]
-        ])
-
-        # Conversational AI prompt
-        prompt = f"""You are a friendly customer service agent for CannaPeace (แคนนาพีซ), a premium cannabis shop in Thailand.
-
-CONVERSATION HISTORY:
-{history_text if history_text else "(New conversation)"}
-
-CUSTOMER'S NEW MESSAGE:
+Order message:
 {message_text}
 
-YOUR PRODUCTS:
-{products_info}
+Extract:
+- customer_name: Customer name (if not provided, use "Customer")
+- phone: Phone number (if not provided, use "Not provided")
+- items: List of {{name, quantity, price_per_gram}}
+- total: Total amount in THB
+- notes: Any special instructions (optional)
 
-YOUR ROLE:
-1. If greeting (hi/hello/สวัสดี) → Greet warmly in Thai/English and ask how you can help
-2. If asking about products → List products with prices and descriptions
-3. If asking questions → Answer helpfully about strains, effects, THC levels
-4. If placing an order:
-   - Extract items and quantities
-   - Calculate total price
-   - Ask for PHONE NUMBER if not provided
-   - Ask for DELIVERY ADDRESS if not provided
-   - When ALL info is complete, confirm order
+Return JSON only, no markdown."""
 
-RESPONSE FORMAT:
-- Respond naturally in Thai or English (match customer's language)
-- Be friendly, professional, and helpful
-- Use emojis appropriately 🌿
-
-IMPORTANT:
-- ONLY when order is COMPLETE with phone AND address, add this at the end:
-ORDER_COMPLETE:{{"customer_name": "...", "phone": "...", "address": "...", "items": [{{"name": "...", "quantity": X, "price": Y}}], "total": Z, "notes": ""}}
-
-- If info is missing, DON'T include ORDER_COMPLETE, just ask for it naturally
-
-Respond now:"""
-
-        # Call Claude
         response = anthropic_client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=1500,
+            max_tokens=1000,
             messages=[{"role": "user", "content": prompt}]
         )
 
-        bot_reply = response.content[0].text.strip()
+        response_text = response.content[0].text.strip()
 
-        # Update conversation history
-        conversation_memory[user_id].append({"role": "user", "content": message_text})
-        conversation_memory[user_id].append({"role": "assistant", "content": bot_reply})
+        # Strip markdown if present
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
 
-        # Check if order is complete
-        if "ORDER_COMPLETE:" in bot_reply:
+        parsed = json.loads(response_text.strip())
+
+        # Load customer config for templates
+        config = json.loads(Path("customer_config.json").read_text())
+        template = config["templates"]["order_received_thai"]
+
+        # Format items for display
+        items_str = ", ".join([f"{item['name']} x{item['quantity']}" for item in parsed["items"]])
+
+        # Format reply using template
+        reply = template.format(
+            items=items_str,
+            total=f"{parsed['total']:,.0f}",
+            currency=config.get("currency_symbol", "฿")
+        )
+
+        # Log order to Google Sheets (synchronous)
+        if sheets_service and GOOGLE_SHEET_ID != "DEMO_SHEET":
             try:
-                # Extract JSON from response
-                json_start = bot_reply.index("ORDER_COMPLETE:") + len("ORDER_COMPLETE:")
-                json_str = bot_reply[json_start:].strip()
+                items_str_sheet = ", ".join([f"{item['name']} x{item['quantity']}" for item in parsed["items"]])
+                row = [
+                    datetime.now().isoformat(),
+                    parsed.get("customer_name", "Customer"),
+                    parsed.get("phone", "Not provided"),
+                    items_str_sheet,
+                    parsed["total"],
+                    parsed.get("notes", "")
+                ]
 
-                # Find JSON object
-                if json_str.startswith("{"):
-                    json_end = json_str.index("}") + 1
-                    json_str = json_str[:json_end]
-
-                order_data = json.loads(json_str)
-
-                # Remove ORDER_COMPLETE from reply
-                bot_reply = bot_reply[:bot_reply.index("ORDER_COMPLETE:")].strip()
-
-                # Save to Google Sheets
-                if sheets_service and GOOGLE_SHEET_ID != "DEMO_SHEET":
-                    items_str = ", ".join([f"{item['name']} x{item['quantity']}g" for item in order_data["items"]])
-                    row = [
-                        datetime.now().isoformat(),
-                        order_data.get("customer_name", "Customer"),
-                        order_data.get("phone", "Not provided"),
-                        items_str,
-                        order_data["total"],
-                        order_data.get("address", "") + " " + order_data.get("notes", "")
-                    ]
-
-                    body = {'values': [row]}
-                    sheets_service.spreadsheets().values().append(
-                        spreadsheetId=GOOGLE_SHEET_ID,
-                        range='Sheet1!A:F',
-                        valueInputOption='USER_ENTERED',
-                        insertDataOption='INSERT_ROWS',
-                        body=body
-                    ).execute()
-
-                    print(f"✅ Order saved to sheet for user {user_id}")
-
-                # Clear conversation after successful order
-                conversation_memory[user_id] = []
-
+                body = {'values': [row]}
+                sheets_service.spreadsheets().values().append(
+                    spreadsheetId=GOOGLE_SHEET_ID,
+                    range='Sheet1!A:F',
+                    valueInputOption='USER_ENTERED',
+                    insertDataOption='INSERT_ROWS',
+                    body=body
+                ).execute()
             except Exception as sheet_error:
                 print(f"Sheet error: {sheet_error}")
 
-        # Send reply
         if line_bot_api:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text=bot_reply)
+                TextSendMessage(text=reply)
             )
-
     except Exception as e:
         print(f"Error handling message: {e}")
         import traceback
         traceback.print_exc()
+        # Send error message to user
         if line_bot_api:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="❌ ขออภัยค่ะ เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่อีกครั้งค่ะ")
+                TextSendMessage(text="❌ ขออภัยค่ะ เกิดข้อผิดพลาดในการประมวลผล")
             )
 
 # Register handler only if LINE is configured
