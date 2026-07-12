@@ -436,11 +436,19 @@ async def get_daily_summary():
 @app.get("/health")
 async def health():
     """Health check"""
+    import os
+    cwd = os.getcwd()
+    config_exists = Path("customer_config.json").exists()
+    sample_exists = Path("sample_orders.json").exists()
+
     return {
         "status": "ok",
         "mode": "DEMO" if not anthropic_client else "LIVE",
         "line_webhook": "configured" if handler else "demo",
-        "google_sheets": "configured" if sheets_service else "demo"
+        "google_sheets": "configured" if sheets_service else "demo",
+        "cwd": cwd,
+        "customer_config_exists": config_exists,
+        "sample_orders_exists": sample_exists
     }
 
 if __name__ == "__main__":
