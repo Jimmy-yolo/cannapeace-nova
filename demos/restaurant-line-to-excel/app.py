@@ -319,6 +319,9 @@ def handle_message(event):
     """Handle incoming LINE messages (note: LINE bot SDK doesn't support async handlers)"""
     try:
         import asyncio
+        import nest_asyncio
+        nest_asyncio.apply()  # Allow nested event loops
+
         message_text = event.message.text
 
         # Parse order using Claude AI
@@ -348,6 +351,8 @@ def handle_message(event):
             )
     except Exception as e:
         print(f"Error handling message: {e}")
+        import traceback
+        traceback.print_exc()
         # Send error message to user
         if line_bot_api:
             line_bot_api.reply_message(

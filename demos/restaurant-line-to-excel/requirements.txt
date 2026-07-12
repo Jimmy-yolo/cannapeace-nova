@@ -9,3 +9,4 @@ google-auth-httplib2==0.2.0
 google-api-python-client==2.155.0
 pydantic==2.10.5
 python-dotenv==1.0.1
+nest-asyncio==1.6.0
