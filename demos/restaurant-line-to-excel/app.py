@@ -14,7 +14,7 @@ from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage
 import anthropic
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -375,26 +375,36 @@ YOUR PRODUCTS:
 {products_info}
 
 YOUR ROLE:
-1. If greeting (hi/hello/สวัสดี) → Greet warmly in Thai/English and ask how you can help
-2. If asking about products → List products with prices and descriptions
-3. If asking questions → Answer helpfully about strains, effects, THC levels
+1. If greeting (hi/hello/สวัสดี) → Greet warmly in Thai/English
+2. If asking about menu/products (what do you have/menu/รายการ) → Show the menu with short descriptions
+3. If asking about SPECIFIC strain → Say "SEND_IMAGE:strain_name" then describe it in detail
 4. If placing an order:
    - Extract items and quantities
-   - Calculate total price
    - Ask for PHONE NUMBER if not provided
    - Ask for DELIVERY ADDRESS if not provided
-   - When ALL info is complete, confirm order
+   - When ALL info complete, confirm order
 
-RESPONSE FORMAT:
-- Respond naturally in Thai or English (match customer's language)
-- Be friendly, professional, and helpful
-- Use emojis appropriately 🌿
+MENU FORMAT (when showing menu):
+🌿 **CannaPeace Menu** 🌿
+All strains: 450฿ per 10g
+
+1. Capjunky (Hybrid 28% THC) - Sweet, relaxing
+2. Alien Marker (Indica 26% THC) - Deep relaxation
+3. Trop Cherry (Hybrid 27% THC) - Tropical, fruity
+4. Gogurtz (Hybrid 29% THC) - Creamy, dessert
+5. Berry Bonds (Indica 25% THC) - Berry, evening
+6. LCG x Grapegas (Hybrid 30% THC) - Gassy, strong
+7. Apple Banana (Sativa 24% THC) - Uplifting, fruity
+
+💬 Ask about any strain for details!
 
 IMPORTANT:
-- ONLY when order is COMPLETE with phone AND address, add this at the end:
-ORDER_COMPLETE:{{"customer_name": "...", "phone": "...", "address": "...", "items": [{{"name": "...", "quantity": X, "price": Y}}], "total": Z, "notes": ""}}
+- When user asks about SPECIFIC strain, respond with:
+  SEND_IMAGE:strain_english_name
+  Then describe the strain
 
-- If info is missing, DON'T include ORDER_COMPLETE, just ask for it naturally
+- When order is COMPLETE (has phone + address):
+  ORDER_COMPLETE:{{"customer_name": "...", "phone": "...", "address": "...", "items": [{{"name": "...", "quantity": X, "price": Y}}], "total": Z}}
 
 Respond now:"""
 
@@ -457,12 +467,47 @@ Respond now:"""
             except Exception as sheet_error:
                 print(f"Sheet error: {sheet_error}")
 
-        # Send reply
+        # Check if bot wants to send product image
+        image_to_send = None
+        if "SEND_IMAGE:" in bot_reply:
+            try:
+                # Extract strain name
+                image_marker = "SEND_IMAGE:"
+                start_idx = bot_reply.index(image_marker) + len(image_marker)
+                end_idx = bot_reply.index("\n", start_idx) if "\n" in bot_reply[start_idx:] else len(bot_reply)
+                strain_name = bot_reply[start_idx:end_idx].strip()
+
+                # Find product image URL
+                for product in config["products"]:
+                    if product["name_english"].lower() == strain_name.lower():
+                        # For now use placeholder - you'll add real image URLs later
+                        image_url = f"https://via.placeholder.com/1080x1350/2d5016/ffffff?text={product['name_english']}"
+                        image_to_send = image_url
+                        print(f"📸 Sending image for: {product['name_english']}")
+                        break
+
+                # Remove SEND_IMAGE marker from text
+                bot_reply = bot_reply[:bot_reply.index(image_marker)] + bot_reply[end_idx+1:]
+                bot_reply = bot_reply.strip()
+
+            except Exception as img_error:
+                print(f"Image error: {img_error}")
+
+        # Send reply (image + text if applicable)
         if line_bot_api:
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=bot_reply)
-            )
+            messages = []
+
+            # Add image if requested
+            if image_to_send:
+                messages.append(ImageSendMessage(
+                    original_content_url=image_to_send,
+                    preview_image_url=image_to_send
+                ))
+
+            # Add text reply
+            messages.append(TextSendMessage(text=bot_reply))
+
+            line_bot_api.reply_message(event.reply_token, messages)
 
     except Exception as e:
         print(f"Error handling message: {e}")
