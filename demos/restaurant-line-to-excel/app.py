@@ -11,7 +11,8 @@ DEMO MODE: Works with sample data without real LINE webhook or API keys.
 """
 
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage
@@ -24,8 +25,14 @@ import json
 import os
 from typing import Dict, List, Optional
 from pydantic import BaseModel
+from urllib.parse import quote
 
 app = FastAPI(title="Restaurant LINE-to-Excel Bridge")
+
+# Mount static files for strain images
+PRODUCT_IMAGES_PATH = Path(__file__).parent / "product_images" / "v6"
+if PRODUCT_IMAGES_PATH.exists():
+    app.mount("/strain-images", StaticFiles(directory=str(PRODUCT_IMAGES_PATH)), name="strain-images")
 
 # Configuration (with fallbacks for demo mode)
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET", "DEMO_MODE")
@@ -477,14 +484,45 @@ Respond now:"""
                 end_idx = bot_reply.index("\n", start_idx) if "\n" in bot_reply[start_idx:] else len(bot_reply)
                 strain_name = bot_reply[start_idx:end_idx].strip()
 
-                # Find product image URL
-                for product in config["products"]:
-                    if product["name_english"].lower() == strain_name.lower():
-                        # For now use placeholder - you'll add real image URLs later
-                        image_url = f"https://via.placeholder.com/1080x1350/2d5016/ffffff?text={product['name_english']}"
-                        image_to_send = image_url
-                        print(f"📸 Sending image for: {product['name_english']}")
-                        break
+                # Find product image URL using real strain images from product_images/v6/
+                # Image filenames match display names (e.g., "Alien Marker.png")
+
+                # Name mappings for variations
+                name_mappings = {
+                    "trop cherry": "Tropical Cherry",
+                    "tropical cherry": "Tropical Cherry",
+                    "lcg x grapegas": "Grape Gas",  # If you have Grape Gas image
+                    "any day": "Any Day",
+                    "miracle mints": "Miracle Mints"
+                }
+
+                # Try direct match first
+                image_filename = f"{strain_name}.png"
+                image_path = PRODUCT_IMAGES_PATH / image_filename
+
+                # If not found, try mapped name
+                if not image_path.exists() and strain_name.lower() in name_mappings:
+                    mapped_name = name_mappings[strain_name.lower()]
+                    image_filename = f"{mapped_name}.png"
+                    image_path = PRODUCT_IMAGES_PATH / image_filename
+
+                if image_path.exists():
+                    # Use Railway URL or localhost for image serving
+                    base_url = os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
+                    if not base_url.startswith("http"):
+                        base_url = f"https://{base_url}"
+
+                    # URL-encode the filename to handle spaces (e.g., "Cap Junky.png" -> "Cap%20Junky.png")
+                    encoded_filename = quote(image_filename)
+                    image_url = f"{base_url}/strain-images/{encoded_filename}"
+                    image_to_send = image_url
+                    print(f"📸 Sending image for: {strain_name} from {image_url}")
+                else:
+                    print(f"⚠️ Image not found for: {strain_name} (tried: {image_filename})")
+                    # List available images for debugging
+                    if PRODUCT_IMAGES_PATH.exists():
+                        available = [f.name for f in PRODUCT_IMAGES_PATH.glob("*.png")]
+                        print(f"Available images: {', '.join(available)}")
 
                 # Remove SEND_IMAGE marker from text
                 bot_reply = bot_reply[:bot_reply.index(image_marker)] + bot_reply[end_idx+1:]
@@ -492,6 +530,8 @@ Respond now:"""
 
             except Exception as img_error:
                 print(f"Image error: {img_error}")
+                import traceback
+                traceback.print_exc()
 
         # Send reply (image + text if applicable)
         if line_bot_api:
@@ -613,6 +653,34 @@ async def health():
         "cwd": cwd,
         "customer_config_exists": config_exists,
         "sample_orders_exists": sample_exists
+    }
+
+@app.get("/strain-images-list")
+async def list_strain_images():
+    """List all available strain images"""
+    if not PRODUCT_IMAGES_PATH.exists():
+        return {"error": "Product images directory not found"}
+
+    images = []
+    for img_file in PRODUCT_IMAGES_PATH.glob("*.png"):
+        base_url = os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
+        if not base_url.startswith("http"):
+            base_url = f"https://{base_url}"
+
+        # URL-encode filename to handle spaces
+        encoded_filename = quote(img_file.name)
+
+        images.append({
+            "filename": img_file.name,
+            "strain_name": img_file.stem,  # Name without extension
+            "url": f"{base_url}/strain-images/{encoded_filename}",
+            "size_mb": round(img_file.stat().st_size / (1024 * 1024), 2)
+        })
+
+    return {
+        "total_images": len(images),
+        "images": sorted(images, key=lambda x: x["strain_name"]),
+        "base_url": os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
     }
 
 if __name__ == "__main__":
