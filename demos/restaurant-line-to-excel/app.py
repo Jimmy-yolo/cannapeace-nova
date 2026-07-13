@@ -645,6 +645,11 @@ async def health():
     config_exists = Path("customer_config.json").exists()
     sample_exists = Path("sample_orders.json").exists()
 
+    # Debug: Check product images path
+    images_path_exists = PRODUCT_IMAGES_PATH.exists()
+    images_path_str = str(PRODUCT_IMAGES_PATH)
+    images_count = len(list(PRODUCT_IMAGES_PATH.glob("*.png"))) if images_path_exists else 0
+
     return {
         "status": "ok",
         "mode": "DEMO" if not anthropic_client else "LIVE",
@@ -652,7 +657,10 @@ async def health():
         "google_sheets": "configured" if sheets_service else "demo",
         "cwd": cwd,
         "customer_config_exists": config_exists,
-        "sample_orders_exists": sample_exists
+        "sample_orders_exists": sample_exists,
+        "product_images_path": images_path_str,
+        "product_images_exists": images_path_exists,
+        "product_images_count": images_count
     }
 
 @app.get("/strain-images-list")
