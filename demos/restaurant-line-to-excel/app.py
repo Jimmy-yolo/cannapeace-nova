@@ -395,20 +395,25 @@ MENU FORMAT (when showing menu):
 🌿 **CannaPeace Menu** 🌿
 All strains: 450฿ per 10g
 
-1. Capjunky (Hybrid 28% THC) - Sweet, relaxing
+1. Cap Junky / Miracle Mints (Hybrid 28% THC) - Sweet, relaxing
 2. Alien Marker (Indica 26% THC) - Deep relaxation
-3. Trop Cherry (Hybrid 27% THC) - Tropical, fruity
+3. Trop Cherry / Tropical Cherry (Hybrid 27% THC) - Tropical, fruity
 4. Gogurtz (Hybrid 29% THC) - Creamy, dessert
 5. Berry Bonds (Indica 25% THC) - Berry, evening
-6. LCG x Grapegas (Hybrid 30% THC) - Gassy, strong
+6. LCG x Grapegas / Any Day (Hybrid 30% THC) - Gassy, strong
 7. Apple Banana (Sativa 24% THC) - Uplifting, fruity
 
 💬 Ask about any strain for details!
 
-IMPORTANT:
-- When user asks about SPECIFIC strain, respond with:
-  SEND_IMAGE:strain_english_name
-  Then describe the strain
+IMPORTANT STRAIN NAME ALIASES (use these for SEND_IMAGE):
+- "Cap Junky" OR "Capjunky" → Use "SEND_IMAGE:Miracle Mints"
+- "LCG x Grapegas" → Use "SEND_IMAGE:Any Day"
+- "Trop Cherry" → Use "SEND_IMAGE:Tropical Cherry"
+- All others → Use exact name
+
+WHEN USER ASKS ABOUT SPECIFIC STRAIN:
+- Respond with: SEND_IMAGE:mapped_name (use aliases above)
+- Then describe the strain
 
 - When order is COMPLETE (has phone + address):
   ORDER_COMPLETE:{{"customer_name": "...", "phone": "...", "address": "...", "items": [{{"name": "...", "quantity": X, "price": Y}}], "total": Z}}
@@ -487,13 +492,23 @@ Respond now:"""
                 # Find product image URL using real strain images from product_images/v6/
                 # Image filenames match display names (e.g., "Alien Marker.png")
 
-                # Name mappings for variations
+                # Name mappings for strain variations (same strain, different names)
                 name_mappings = {
+                    # Tropical Cherry variations
                     "trop cherry": "Tropical Cherry",
                     "tropical cherry": "Tropical Cherry",
-                    "lcg x grapegas": "Grape Gas",  # If you have Grape Gas image
+
+                    # Cap Junky = Miracle Mints (same strain)
+                    "cap junky": "Miracle Mints",
+                    "capjunky": "Miracle Mints",
+                    "miracle mints": "Miracle Mints",
+
+                    # LCG x Grapegas = Any Day (same strain)
+                    "lcg x grapegas": "Any Day",
+                    "lcg grapegas": "Any Day",
+                    "lcgxgrapegas": "Any Day",
                     "any day": "Any Day",
-                    "miracle mints": "Miracle Mints"
+                    "anyday": "Any Day"
                 }
 
                 # Try direct match first
