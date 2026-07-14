@@ -355,11 +355,18 @@ def log_message(user_id: str, direction: str, content: str, intent: str = ""):
     except Exception as e:
         print(f"Error logging message: {e}")
 
-# Initialize CRM sheets on startup
+# Initialize CRM sheets on startup (with detailed logging)
+CRM_SETUP_STATUS = {"success": False, "error": None, "sheets_created": []}
 try:
+    print("🚀 Initializing CRM sheets on startup...")
     ensure_crm_sheets_exist()
+    CRM_SETUP_STATUS["success"] = True
+    print("✅ CRM sheets initialization complete")
 except Exception as e:
+    CRM_SETUP_STATUS["error"] = str(e)
     print(f"⚠️ Could not initialize CRM sheets: {e}")
+    import traceback
+    traceback.print_exc()
 
 # Models
 class OrderItem(BaseModel):
@@ -1005,8 +1012,55 @@ async def health():
         "sample_orders_exists": sample_exists,
         "product_images_path": images_path_str,
         "product_images_exists": images_path_exists,
-        "product_images_count": images_count
+        "product_images_count": images_count,
+        "crm_setup_status": CRM_SETUP_STATUS
     }
+
+@app.get("/setup-crm")
+async def setup_crm_manual():
+    """
+    Manual trigger for CRM sheets setup
+    Use this if sheets weren't auto-created on startup
+    Safe to run multiple times (idempotent)
+    """
+    if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
+        return {
+            "success": False,
+            "error": "Google Sheets not configured. Check GOOGLE_CREDENTIALS_BASE64 and GOOGLE_SHEET_ID environment variables.",
+            "google_sheet_id": GOOGLE_SHEET_ID
+        }
+
+    try:
+        # Get current sheets before setup
+        sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=GOOGLE_SHEET_ID).execute()
+        sheets_before = [s['properties']['title'] for s in sheet_metadata.get('sheets', [])]
+
+        # Run setup
+        ensure_crm_sheets_exist()
+
+        # Get sheets after setup
+        sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=GOOGLE_SHEET_ID).execute()
+        sheets_after = [s['properties']['title'] for s in sheet_metadata.get('sheets', [])]
+
+        new_sheets = [s for s in sheets_after if s not in sheets_before]
+
+        return {
+            "success": True,
+            "sheets_before": sheets_before,
+            "sheets_after": sheets_after,
+            "new_sheets_created": new_sheets,
+            "message": "CRM setup completed successfully",
+            "google_sheet_url": f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/edit"
+        }
+
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "google_sheet_id": GOOGLE_SHEET_ID
+        }
 
 @app.get("/strain-images-list")
 async def list_strain_images():
