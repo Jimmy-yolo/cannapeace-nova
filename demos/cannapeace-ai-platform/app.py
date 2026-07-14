@@ -468,10 +468,16 @@ def smart_update_customer_profile(user_id: str, message: str):
 
 def detect_language_from_message(message: str) -> Optional[str]:
     """
-    Detect language from flag emoji or text patterns
+    Detect EXPLICIT language switch requests only.
     Returns: 'thai', 'english', 'chinese', or None
+
+    ONLY triggers on:
+    - Flag emojis (🇹🇭, 🇬🇧, 🇨🇳)
+    - Explicit language commands ('thai', 'english', 'chinese')
+
+    Does NOT auto-detect from character scripts to avoid false positives.
     """
-    # Flag emoji detection
+    # Flag emoji detection (highest priority)
     flag_mappings = {
         '🇹🇭': 'thai',
         '🇬🇧': 'english',
@@ -483,10 +489,10 @@ def detect_language_from_message(message: str) -> Optional[str]:
         if flag in message:
             return lang
 
-    # Text-based language switching
+    # Text-based language switching (only exact matches)
     message_lower = message.lower().strip()
 
-    # Explicit language commands
+    # Explicit language commands only
     if message_lower in ['thai', 'ไทย', 'th']:
         return 'thai'
     elif message_lower in ['english', 'en', 'eng']:
@@ -494,13 +500,8 @@ def detect_language_from_message(message: str) -> Optional[str]:
     elif message_lower in ['chinese', 'zh', '中文', 'cn']:
         return 'chinese'
 
-    # Auto-detect from script (basic heuristic)
-    if any('\u0e00' <= char <= '\u0e7f' for char in message):  # Thai characters
-        return 'thai'
-    elif any('\u4e00' <= char <= '\u9fff' for char in message):  # Chinese characters
-        return 'chinese'
-
-    return None  # Default to existing preference or English
+    # NO auto-detection from script - return None
+    return None
 
 def update_customer_language(user_id: str, language: str):
     """
@@ -906,7 +907,7 @@ def handle_message(event):
         config = json.loads(Path("customer_config.json").read_text())
         timings['prep'] = time.time() - prep_start
         products_info = "\n".join([
-            f"- {p['name_english']} ({p['name_thai']}): {p['price_per_gram']}฿/g - {p['strain_type']} {p['thc']} THC"
+            f"- {p['name_english']} ({p['name_thai']}): {p['strain_type']} | {p['thc']} THC | {p['description']}"
             for p in config["products"]
         ])
 
@@ -944,7 +945,6 @@ YOUR ROLE:
 
 MENU FORMAT (when showing menu):
 🌿 **CannaPeace Menu** 🌿
-All strains: 450฿ per 10g
 
 1. Cap Junky / Miracle Mints (Hybrid 28% THC) - Sweet, relaxing
 2. Alien Marker (Indica 26% THC) - Deep relaxation
@@ -967,7 +967,9 @@ WHEN USER ASKS ABOUT SPECIFIC STRAIN:
 - Then describe the strain
 
 - When order is COMPLETE (has phone + address):
-  ORDER_COMPLETE:{{"customer_name": "...", "phone": "...", "address": "...", "items": [{{"name": "...", "quantity": X, "price": Y}}], "total": Z}}
+  ORDER_COMPLETE:{{"customer_name": "...", "phone": "...", "address": "...", "items": [{{"name": "...", "quantity": "X grams"}}]}}
+
+NOTE: Do NOT mention prices. Prices are discussed privately/in person.
 
 Respond now:"""
 
@@ -1006,7 +1008,7 @@ Respond now:"""
                 # Save to Google Sheets (v2.0 CRM)
                 if sheets_service and GOOGLE_SHEET_ID != "DEMO_SHEET":
                     sheets_start = time.time()
-                    items_str = ", ".join([f"{item['name']} x{item['quantity']}g" for item in order_data["items"]])
+                    items_str = ", ".join([f"{item['name']} {item['quantity']}" for item in order_data["items"]])
 
                     # v2.0: Save order with LINE User ID
                     order_row = [
@@ -1015,9 +1017,9 @@ Respond now:"""
                         order_data.get("customer_name", "Customer"),
                         order_data.get("phone", "Not provided"),
                         items_str,
-                        order_data["total"],
-                        order_data.get("address", "") + " " + order_data.get("notes", ""),
-                        "Completed",  # Status
+                        "TBD",  # Total - discussed privately
+                        order_data.get("address", ""),
+                        "Pending",  # Status
                         "LINE"  # Attribution_Source (default to LINE for now)
                     ]
 
@@ -1030,12 +1032,12 @@ Respond now:"""
                         body=body
                     ).execute()
 
-                    # v2.0: Create or update customer profile
+                    # v2.0: Create or update customer profile (increment order count)
                     create_or_update_customer_profile(
                         user_id=user_id,
                         phone=order_data.get("phone", ""),
                         name=order_data.get("customer_name", ""),
-                        order_total=order_data["total"]
+                        order_total=1  # Just increment order count, no price tracking
                     )
 
                     timings['google_sheets'] = time.time() - sheets_start

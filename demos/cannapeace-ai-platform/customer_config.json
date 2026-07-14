@@ -28,13 +28,13 @@
   },
 
   "products": [
-    {"name_english": "Cap Junky", "name_thai": "แคปจั๊งกี้", "strain_type": "Hybrid", "price_per_gram": 450, "thc": "28%", "description": "Relaxing hybrid with sweet, earthy flavors", "image": "capjunky.jpg"},
-    {"name_english": "Alien Marker", "name_thai": "เอเลี่ยนมาร์คเกอร์", "strain_type": "Indica", "price_per_gram": 450, "thc": "26%", "description": "Potent indica for deep relaxation", "image": "alien_marker.jpg"},
-    {"name_english": "Trop Cherry", "name_thai": "ทรอปเชอร์รี่", "strain_type": "Hybrid", "price_per_gram": 450, "thc": "27%", "description": "Fruity hybrid with tropical cherry notes", "image": "trop_cherry.jpg"},
-    {"name_english": "Gogurtz", "name_thai": "โกเกิร์ตซ์", "strain_type": "Hybrid", "price_per_gram": 450, "thc": "29%", "description": "Creamy, dessert-like hybrid strain", "image": "gogurtz.jpg"},
-    {"name_english": "Berry Bonds", "name_thai": "เบอร์รี่บอนด์", "strain_type": "Indica", "price_per_gram": 450, "thc": "25%", "description": "Berry-flavored indica for evening relaxation", "image": "berry_bonds.jpg"},
-    {"name_english": "LCG x Grapegas", "name_thai": "แอลซีจี เอ็กซ์ เกรปแก๊ส", "strain_type": "Hybrid", "price_per_gram": 450, "thc": "30%", "description": "Gassy grape flavors with strong effects", "image": "lcg_grapegas.jpg"},
-    {"name_english": "Apple Banana", "name_thai": "แอปเปิ้ลบานานา", "strain_type": "Sativa", "price_per_gram": 450, "thc": "24%", "description": "Uplifting sativa with fruity apple-banana taste", "image": "apple_banana.jpg"}
+    {"name_english": "Cap Junky", "name_thai": "แคปจั๊งกี้", "strain_type": "Hybrid", "thc": "28%", "description": "Relaxing hybrid with sweet, earthy flavors", "image": "capjunky.jpg"},
+    {"name_english": "Alien Marker", "name_thai": "เอเลี่ยนมาร์คเกอร์", "strain_type": "Indica", "thc": "26%", "description": "Potent indica for deep relaxation", "image": "alien_marker.jpg"},
+    {"name_english": "Trop Cherry", "name_thai": "ทรอปเชอร์รี่", "strain_type": "Hybrid", "thc": "27%", "description": "Fruity hybrid with tropical cherry notes", "image": "trop_cherry.jpg"},
+    {"name_english": "Gogurtz", "name_thai": "โกเกิร์ตซ์", "strain_type": "Hybrid", "thc": "29%", "description": "Creamy, dessert-like hybrid strain", "image": "gogurtz.jpg"},
+    {"name_english": "Berry Bonds", "name_thai": "เบอร์รี่บอนด์", "strain_type": "Indica", "thc": "25%", "description": "Berry-flavored indica for evening relaxation", "image": "berry_bonds.jpg"},
+    {"name_english": "LCG x Grapegas", "name_thai": "แอลซีจี เอ็กซ์ เกรปแก๊ส", "strain_type": "Hybrid", "thc": "30%", "description": "Gassy grape flavors with strong effects", "image": "lcg_grapegas.jpg"},
+    {"name_english": "Apple Banana", "name_thai": "แอปเปิ้ลบานานา", "strain_type": "Sativa", "thc": "24%", "description": "Uplifting sativa with fruity apple-banana taste", "image": "apple_banana.jpg"}
   ],
 
   "timezone": "Asia/Bangkok",
