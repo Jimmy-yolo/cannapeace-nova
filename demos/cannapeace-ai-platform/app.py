@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
 """
-Restaurant LINE-to-Excel Order Bridge (D2)
-===========================================
-2-Day Demo | Happy Path Only | Sample Data
+CannaPeace AI Platform - Omnichannel Customer Engagement System
+================================================================
+v1.0 → v2.0 (CRM + Multi-Channel Expansion)
 
-Receives LINE messages with restaurant orders (Thai/Chinese/English mixed),
-parses them using GPT-4, appends to Google Sheet.
+AI-powered customer service platform for cannabis retail.
+Currently supports LINE with planned expansion to:
+- Facebook Messenger
+- Instagram DM
+- TikTok Chat
+- Social media auto-reply (comments)
 
-DEMO MODE: Works with sample data without real LINE webhook or API keys.
+Features:
+- Claude AI conversational service (Thai/English)
+- Customer journey tracking & CRM
+- Multi-channel attribution
+- Automated strain recommendations
+- Google Sheets + future PostgreSQL backend
+
+v1.0: LINE bot with strain images, orders, conversation memory
+v2.0: CRM, attribution, customer profiles, multi-channel foundation
 """
 
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
@@ -27,7 +39,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 from urllib.parse import quote
 
-app = FastAPI(title="Restaurant LINE-to-Excel Bridge")
+app = FastAPI(title="CannaPeace AI Platform - Omnichannel Customer Engagement")
 
 # Mount static files for strain images
 PRODUCT_IMAGES_PATH = Path(__file__).parent / "product_images" / "v6"
