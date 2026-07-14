@@ -348,6 +348,13 @@ def handle_message(event):
 
         print(f"⏱️ [PERF] Message received from {user_id}: '{message_text[:50]}...'")
 
+        # Show typing indicator immediately
+        if line_bot_api and hasattr(event.source, 'user_id'):
+            try:
+                line_bot_api.show_loading_animation(event.source.user_id)
+            except Exception as typing_error:
+                print(f"⚠️ Could not show typing indicator: {typing_error}")
+
         # Check if Claude is configured
         if not anthropic_client:
             if line_bot_api:
