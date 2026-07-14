@@ -27,7 +27,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage, AudioSendMessage
 import anthropic
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -699,7 +699,7 @@ async def index():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Restaurant LINE-to-Excel Bridge - DEMO MODE</title>
+        <title>CannaPeace AI Platform - DEMO MODE</title>
         <meta charset="UTF-8">
         <style>
             body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 1000px; margin: 50px auto; padding: 20px; }
@@ -714,11 +714,11 @@ async def index():
         </style>
     </head>
     <body>
-        <h1>🍜 Restaurant LINE-to-Excel Bridge</h1>
+        <h1>🌿 CannaPeace AI Platform</h1>
         <div style="background: #fff3cd; padding: 10px; margin: 10px 0; border-left: 4px solid #ffc107; border-radius: 4px;">
             <strong>⚠️ DEMO MODE:</strong> Using sample data. Connect LINE bot + Google Sheets for live operation.
         </div>
-        <p><strong>Parse Thai/Chinese/English restaurant orders automatically</strong></p>
+        <p><strong>AI-powered customer service with multilingual support (7 languages)</strong></p>
 
         <div class="section">
             <h2>Sample Orders (Click to Test)</h2>
@@ -868,10 +868,25 @@ def handle_message(event):
         if is_first_message:
             greeting = get_greeting_message(current_language)
             if line_bot_api:
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text=greeting)
-                )
+                # Send both voice + text greeting
+                messages = []
+
+                # Add voice message if available
+                base_url = os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
+                if not base_url.startswith("http"):
+                    base_url = f"https://{base_url}"
+
+                voice_url = f"{base_url}/greeting-voice"
+                # Voice greeting: "สวัสดีค่ะ! ยินดีต้อนรับสู่แคนนาพีซ" (10 seconds)
+                messages.append(AudioSendMessage(
+                    original_content_url=voice_url,
+                    duration=10000  # 10 seconds
+                ))
+
+                # Add text greeting with language options
+                messages.append(TextSendMessage(text=greeting))
+
+                line_bot_api.reply_message(event.reply_token, messages)
             return
 
         # Show typing indicator immediately
@@ -1747,9 +1762,28 @@ async def get_attribution_stats():
 # END ATTRIBUTION SYSTEM
 # ============================================================================
 
+@app.get("/greeting-voice")
+async def serve_greeting_voice():
+    """Serve greeting voice message"""
+    # Check if greeting audio file exists
+    voice_file = Path("greeting_voice.m4a")
+    if voice_file.exists():
+        return FileResponse(
+            voice_file,
+            media_type="audio/m4a",
+            headers={
+                "Content-Disposition": "inline; filename=greeting.m4a"
+            }
+        )
+    else:
+        # Return placeholder/silence if no audio file
+        # You can upload greeting_voice.m4a to add voice greeting
+        raise HTTPException(status_code=404, detail="Voice greeting not configured")
+
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Starting Restaurant LINE-to-Excel Bridge (Demo)")
+    print("🚀 Starting CannaPeace AI Platform")
     print(f"📍 Open: http://localhost:8001")
     print(f"🔧 Mode: {'DEMO' if not anthropic_client else 'LIVE'}")
+    print(f"🌿 LINE Bot: @cannapeace")
     uvicorn.run(app, host="0.0.0.0", port=8001)
