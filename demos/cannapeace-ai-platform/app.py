@@ -355,6 +355,88 @@ def log_message(user_id: str, direction: str, content: str, intent: str = ""):
     except Exception as e:
         print(f"Error logging message: {e}")
 
+def extract_customer_info_from_message(message: str) -> dict:
+    """
+    Smart extraction of customer info (phone, name) from natural conversation
+    Returns dict with 'phone' and 'name' if found
+    """
+    import re
+
+    info = {'phone': None, 'name': None}
+
+    # Phone number patterns (Thai format)
+    phone_patterns = [
+        r'(?:เบอร์|โทร|เบอ|phone|tel|number)[:\s]*([0-9\-]{9,12})',  # "เบอร์ 092-343-2606"
+        r'([0-9]{3}[-\s]?[0-9]{3}[-\s]?[0-9]{4})',  # 092-343-2606 or 0923432606
+        r'([0-9]{2}[-\s]?[0-9]{4}[-\s]?[0-9]{4})',  # 09-2343-2606
+    ]
+
+    for pattern in phone_patterns:
+        match = re.search(pattern, message, re.IGNORECASE)
+        if match:
+            phone = match.group(1) if len(match.groups()) > 0 else match.group(0)
+            # Clean up phone number
+            phone = re.sub(r'[^\d]', '', phone)  # Remove non-digits
+            if len(phone) >= 9 and len(phone) <= 12:
+                # Format to xxx-xxx-xxxx
+                if len(phone) == 10:
+                    info['phone'] = f"{phone[:3]}-{phone[3:6]}-{phone[6:]}"
+                elif len(phone) == 9:
+                    info['phone'] = f"{phone[:2]}-{phone[2:6]}-{phone[6:]}"
+                else:
+                    info['phone'] = phone
+                break
+
+    # Name patterns (Thai/English)
+    name_patterns = [
+        r'(?:my name is|i\'?m)[:\s]+([ก-๙a-zA-Z]{2,30})',  # "My name is Howard"
+        r'(?:ชื่อ|called)[:\s]+([ก-๙a-zA-Z\s]{2,30})',  # "ชื่อ จิมมี่"
+        r'(?:ผม|ดิฉัน|หนู)[:\s]+([ก-๙a-zA-Z\s]{2,30})',  # "ผม จิมมี่"
+    ]
+
+    for pattern in name_patterns:
+        match = re.search(pattern, message, re.IGNORECASE)
+        if match:
+            name = match.group(1).strip()
+            # Basic validation
+            if len(name) >= 2 and len(name) <= 30:
+                info['name'] = name
+                break
+
+    return info
+
+def smart_update_customer_profile(user_id: str, message: str):
+    """
+    Analyzes message for customer info and updates profile if found
+    Called on every incoming message
+    """
+    if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
+        return
+
+    try:
+        # Extract info from message
+        extracted = extract_customer_info_from_message(message)
+
+        # Only update if we found something
+        if extracted['phone'] or extracted['name']:
+            profile = get_customer_profile(user_id)
+
+            # Update with extracted info
+            create_or_update_customer_profile(
+                user_id=user_id,
+                phone=extracted['phone'] or (profile['phone'] if profile else ''),
+                name=extracted['name'] or (profile['name'] if profile else ''),
+                order_total=0  # Don't increment order count, just update info
+            )
+
+            if extracted['phone']:
+                print(f"✅ Captured phone from conversation: {extracted['phone']} for user {user_id}")
+            if extracted['name']:
+                print(f"✅ Captured name from conversation: {extracted['name']} for user {user_id}")
+
+    except Exception as e:
+        print(f"Error in smart profile update: {e}")
+
 # Initialize CRM sheets on startup (with detailed logging)
 CRM_SETUP_STATUS = {"success": False, "error": None, "sheets_created": []}
 try:
@@ -637,6 +719,9 @@ def handle_message(event):
         profile = get_customer_profile(user_id)
         if not profile:
             create_or_update_customer_profile(user_id)
+
+        # v2.0: Smart extraction - capture phone/name from conversation
+        smart_update_customer_profile(user_id, message_text)
 
         # Show typing indicator immediately
         if line_bot_api and hasattr(event.source, 'user_id'):
