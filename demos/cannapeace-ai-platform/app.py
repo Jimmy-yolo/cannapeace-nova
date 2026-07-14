@@ -469,36 +469,33 @@ def smart_update_customer_profile(user_id: str, message: str):
 def detect_language_from_message(message: str) -> Optional[str]:
     """
     Detect EXPLICIT language switch requests only.
-    Returns: 'thai', 'english', 'chinese', or None
+    Returns: 'thai', 'english', 'chinese', 'russian', 'japanese', 'korean', 'french', or None
 
     ONLY triggers on:
-    - Flag emojis (🇹🇭, 🇬🇧, 🇨🇳)
-    - Explicit language commands ('thai', 'english', 'chinese')
+    - Language symbols/codes (TH, EN, 中文, RU, 日本語, 한국어, FR)
+    - Explicit language commands ('thai', 'english', etc.)
 
     Does NOT auto-detect from character scripts to avoid false positives.
     """
-    # Flag emoji detection (highest priority)
-    flag_mappings = {
-        '🇹🇭': 'thai',
-        '🇬🇧': 'english',
-        '🇺🇸': 'english',
-        '🇨🇳': 'chinese',
-    }
-
-    for flag, lang in flag_mappings.items():
-        if flag in message:
-            return lang
-
-    # Text-based language switching (only exact matches)
+    # Text-based language switching (check for codes and names)
+    message_strip = message.strip()
     message_lower = message.lower().strip()
 
-    # Explicit language commands only
+    # Language code mappings (case-insensitive)
     if message_lower in ['thai', 'ไทย', 'th']:
         return 'thai'
     elif message_lower in ['english', 'en', 'eng']:
         return 'english'
-    elif message_lower in ['chinese', 'zh', '中文', 'cn']:
+    elif message_strip in ['中文', 'chinese', 'zh', 'cn']:
         return 'chinese'
+    elif message_lower in ['russian', 'русский', 'ru', 'rus']:
+        return 'russian'
+    elif message_strip in ['日本語', 'japanese', 'ja', 'jp'] or message_lower in ['japanese', 'ja', 'jp']:
+        return 'japanese'
+    elif message_strip in ['한국어', 'korean', 'ko', 'kr'] or message_lower in ['korean', 'ko', 'kr']:
+        return 'korean'
+    elif message_lower in ['french', 'français', 'francais', 'fr', 'fra']:
+        return 'french'
 
     # NO auto-detection from script - return None
     return None
@@ -907,7 +904,7 @@ def handle_message(event):
         config = json.loads(Path("customer_config.json").read_text())
         timings['prep'] = time.time() - prep_start
         products_info = "\n".join([
-            f"- {p['name_english']} ({p['name_thai']}): {p['strain_type']} | {p['thc']} THC | {p['description']}"
+            f"- {p['name_english']}{' ('+p['alias']+')' if 'alias' in p else ''} ({p['name_thai']}): {p['strain_type']} | {p['thc']} THC | {p['description']}"
             for p in config["products"]
         ])
 
@@ -915,9 +912,13 @@ def handle_message(event):
         language_instructions = {
             'thai': "RESPOND IN THAI (ตอบเป็นภาษาไทย). Be polite and use ค่ะ/ครับ.",
             'english': "RESPOND IN ENGLISH. Be friendly and professional.",
-            'chinese': "RESPOND IN CHINESE (用中文回复). Be polite and professional."
+            'chinese': "RESPOND IN CHINESE (用中文回复). Be polite and professional.",
+            'russian': "RESPOND IN RUSSIAN (Отвечайте на русском). Be polite and professional.",
+            'japanese': "RESPOND IN JAPANESE (日本語で応答してください). Be polite and use です/ます.",
+            'korean': "RESPOND IN KOREAN (한국어로 응답하세요). Be polite and use 요/습니다.",
+            'french': "RESPOND IN FRENCH (Répondez en français). Be polite and professional."
         }
-        lang_instruction = language_instructions.get(current_language, language_instructions['thai'])
+        lang_instruction = language_instructions.get(current_language, language_instructions['english'])
 
         # Conversational AI prompt
         prompt = f"""You are a friendly customer service agent for CannaPeace (แคนนาพีซ / 大麻和平), a premium cannabis shop in Thailand.
@@ -946,21 +947,21 @@ YOUR ROLE:
 MENU FORMAT (when showing menu):
 🌿 **CannaPeace Menu** 🌿
 
-1. Cap Junky / Miracle Mints (Hybrid 28% THC) - Sweet, relaxing
-2. Alien Marker (Indica 26% THC) - Deep relaxation
-3. Trop Cherry / Tropical Cherry (Hybrid 27% THC) - Tropical, fruity
-4. Gogurtz (Hybrid 29% THC) - Creamy, dessert
-5. Berry Bonds (Indica 25% THC) - Berry, evening
-6. LCG x Grapegas / Any Day (Hybrid 30% THC) - Gassy, strong
-7. Apple Banana (Sativa 24% THC) - Uplifting, fruity
+1. Miracle Mints (Cap Junky) - Hybrid 28% THC - Sweet, relaxing
+2. Alien Marker - Indica 26% THC - Deep relaxation
+3. Tropical Cherry (Trop Cherry) - Hybrid 27% THC - Tropical, fruity
+4. Gogurtz - Hybrid 29% THC - Creamy, dessert
+5. Berry Bonds - Indica 25% THC - Berry, evening
+6. Any Day (LCG x Grapegas) - Hybrid 30% THC - Gassy, strong
+7. Apple Banana - Sativa 24% THC - Uplifting, fruity
 
 💬 Ask about any strain for details!
 
 IMPORTANT STRAIN NAME ALIASES (use these for SEND_IMAGE):
-- "Cap Junky" OR "Capjunky" → Use "SEND_IMAGE:Miracle Mints"
-- "LCG x Grapegas" → Use "SEND_IMAGE:Any Day"
-- "Trop Cherry" → Use "SEND_IMAGE:Tropical Cherry"
-- All others → Use exact name
+- "Miracle Mints" OR "Cap Junky" → Use "SEND_IMAGE:Miracle Mints"
+- "Any Day" OR "LCG x Grapegas" → Use "SEND_IMAGE:Any Day"
+- "Tropical Cherry" OR "Trop Cherry" → Use "SEND_IMAGE:Tropical Cherry"
+- All others → Use exact name from menu
 
 WHEN USER ASKS ABOUT SPECIFIC STRAIN:
 - Respond with: SEND_IMAGE:mapped_name (use aliases above)

@@ -6,34 +6,62 @@
   "supported_languages": {
     "thai": {
       "code": "th",
-      "flag": "🇹🇭",
+      "symbol": "TH",
       "name": "ไทย",
       "name_local": "ไทย",
       "greeting": "สวัสดีค่ะ! ยินดีต้อนรับสู่ CannaPeace 🌿"
     },
     "english": {
       "code": "en",
-      "flag": "🇬🇧",
+      "symbol": "EN",
       "name": "English",
       "name_local": "English",
       "greeting": "Hello! Welcome to CannaPeace 🌿"
     },
     "chinese": {
       "code": "zh",
-      "flag": "🇨🇳",
+      "symbol": "中文",
       "name": "Chinese",
       "name_local": "中文",
       "greeting": "你好！欢迎来到 CannaPeace 🌿"
+    },
+    "russian": {
+      "code": "ru",
+      "symbol": "RU",
+      "name": "Russian",
+      "name_local": "Русский",
+      "greeting": "Здравствуйте! Добро пожаловать в CannaPeace 🌿"
+    },
+    "japanese": {
+      "code": "ja",
+      "symbol": "日本語",
+      "name": "Japanese",
+      "name_local": "日本語",
+      "greeting": "こんにちは！CannaPeaceへようこそ 🌿"
+    },
+    "korean": {
+      "code": "ko",
+      "symbol": "한국어",
+      "name": "Korean",
+      "name_local": "한국어",
+      "greeting": "안녕하세요! CannaPeace에 오신 것을 환영합니다 🌿"
+    },
+    "french": {
+      "code": "fr",
+      "symbol": "FR",
+      "name": "French",
+      "name_local": "Français",
+      "greeting": "Bonjour ! Bienvenue à CannaPeace 🌿"
     }
   },
 
   "products": [
-    {"name_english": "Cap Junky", "name_thai": "แคปจั๊งกี้", "strain_type": "Hybrid", "thc": "28%", "description": "Relaxing hybrid with sweet, earthy flavors", "image": "capjunky.jpg"},
+    {"name_english": "Miracle Mints", "name_thai": "มิราเคิล มินท์", "alias": "Cap Junky", "strain_type": "Hybrid", "thc": "28%", "description": "Relaxing hybrid with sweet, earthy flavors", "image": "capjunky.jpg"},
     {"name_english": "Alien Marker", "name_thai": "เอเลี่ยนมาร์คเกอร์", "strain_type": "Indica", "thc": "26%", "description": "Potent indica for deep relaxation", "image": "alien_marker.jpg"},
-    {"name_english": "Trop Cherry", "name_thai": "ทรอปเชอร์รี่", "strain_type": "Hybrid", "thc": "27%", "description": "Fruity hybrid with tropical cherry notes", "image": "trop_cherry.jpg"},
+    {"name_english": "Tropical Cherry", "name_thai": "ทรอปิคอล เชอร์รี่", "alias": "Trop Cherry", "strain_type": "Hybrid", "thc": "27%", "description": "Fruity hybrid with tropical cherry notes", "image": "trop_cherry.jpg"},
     {"name_english": "Gogurtz", "name_thai": "โกเกิร์ตซ์", "strain_type": "Hybrid", "thc": "29%", "description": "Creamy, dessert-like hybrid strain", "image": "gogurtz.jpg"},
     {"name_english": "Berry Bonds", "name_thai": "เบอร์รี่บอนด์", "strain_type": "Indica", "thc": "25%", "description": "Berry-flavored indica for evening relaxation", "image": "berry_bonds.jpg"},
-    {"name_english": "LCG x Grapegas", "name_thai": "แอลซีจี เอ็กซ์ เกรปแก๊ส", "strain_type": "Hybrid", "thc": "30%", "description": "Gassy grape flavors with strong effects", "image": "lcg_grapegas.jpg"},
+    {"name_english": "Any Day", "name_thai": "เอนี่เดย์", "alias": "LCG x Grapegas", "strain_type": "Hybrid", "thc": "30%", "description": "Gassy grape flavors with strong effects", "image": "lcg_grapegas.jpg"},
     {"name_english": "Apple Banana", "name_thai": "แอปเปิ้ลบานานา", "strain_type": "Sativa", "thc": "24%", "description": "Uplifting sativa with fruity apple-banana taste", "image": "apple_banana.jpg"}
   ],
 
@@ -43,15 +71,23 @@
 
   "templates": {
     "language_switch_prompt": {
-      "thai": "🌐 **เปลี่ยนภาษา / Switch Language:**\nส่งธงชาติเพื่อเปลี่ยนภาษา:\n🇹🇭 ไทย  |  🇬🇧 English  |  🇨🇳 中文",
-      "english": "🌐 **Switch Language:**\nSend a flag emoji to change language:\n🇹🇭 Thai  |  🇬🇧 English  |  🇨🇳 Chinese",
-      "chinese": "🌐 **切换语言:**\n发送国旗表情符号以更改语言:\n🇹🇭 泰语  |  🇬🇧 英语  |  🇨🇳 中文"
+      "thai": "🌐 **เปลี่ยนภาษา / Switch Language:**\nพิมพ์รหัสภาษาเพื่อเปลี่ยน:\nTH | EN | 中文 | RU | 日本語 | 한국어 | FR",
+      "english": "🌐 **Switch Language:**\nType language code to change:\nTH | EN | 中文 | RU | 日本語 | 한국어 | FR",
+      "chinese": "🌐 **切换语言:**\n输入语言代码以更改:\nTH | EN | 中文 | RU | 日本語 | 한국어 | FR",
+      "russian": "🌐 **Сменить язык:**\nВведите код языка для изменения:\nTH | EN | 中文 | RU | 日本語 | 한국어 | FR",
+      "japanese": "🌐 **言語切り替え:**\n言語コードを入力してください:\nTH | EN | 中文 | RU | 日本語 | 한국어 | FR",
+      "korean": "🌐 **언어 전환:**\n언어 코드를 입력하세요:\nTH | EN | 中文 | RU | 日本語 | 한국어 | FR",
+      "french": "🌐 **Changer de langue:**\nTapez le code de langue pour changer:\nTH | EN | 中文 | RU | 日本語 | 한국어 | FR"
     },
 
     "language_switch_confirmation": {
       "thai": "✅ เปลี่ยนภาษาเป็นไทยเรียบร้อยแล้วค่ะ\n\nตอนนี้เราสามารถคุยกันเป็นภาษาไทยได้เลยนะคะ 😊",
       "english": "✅ Your preferred language has been switched to English.\n\nWe can now chat in English! 😊",
-      "chinese": "✅ 您的首选语言已切换为中文。\n\n我们现在可以用中文聊天了！😊"
+      "chinese": "✅ 您的首选语言已切换为中文。\n\n我们现在可以用中文聊天了！😊",
+      "russian": "✅ Ваш предпочитаемый язык изменён на русский.\n\nТеперь мы можем общаться на русском! 😊",
+      "japanese": "✅ 優先言語が日本語に切り替わりました。\n\n日本語でチャットできます！😊",
+      "korean": "✅ 선호 언어가 한국어로 전환되었습니다.\n\n이제 한국어로 채팅할 수 있습니다! 😊",
+      "french": "✅ Votre langue préférée a été changée en français.\n\nNous pouvons maintenant discuter en français ! 😊"
     },
 
     "daily_summary_thai": "📊 สรุปยอดวันนี้\n\n📦 ออเดอร์: {total_orders} รายการ\n💰 ยอดรวม: {total_revenue:,.0f} บาท\n\n🔥 สายพันธุ์ยอดนิยม:\n{top_items}",
