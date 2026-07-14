@@ -57,6 +57,9 @@ GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "DEMO_SHEET")
 # Load sample orders
 SAMPLE_ORDERS = json.loads(Path("sample_orders.json").read_text()) if Path("sample_orders.json").exists() else {"sample_orders": []}
 
+# Load customer config
+CUSTOMER_CONFIG = json.loads(Path("customer_config.json").read_text()) if Path("customer_config.json").exists() else {"supported_languages": {}}
+
 # Initialize services (with demo fallbacks)
 def get_anthropic_client():
     if ANTHROPIC_API_KEY:
@@ -129,7 +132,7 @@ def ensure_crm_sheets_exist():
             ],
             'Customers': [
                 'LINE_User_ID', 'Phone', 'Name', 'First_Seen', 'Last_Seen',
-                'Total_Orders', 'Lifetime_Value', 'Acquisition_Source',
+                'Language_Preference', 'Total_Orders', 'Lifetime_Value', 'Acquisition_Source',
                 'Current_Journey_Stage', 'Segment', 'Favorite_Strains', 'Tags'
             ],
             'Messages': [
@@ -205,7 +208,7 @@ def get_customer_profile(user_id: str) -> Optional[dict]:
     try:
         result = sheets_service.spreadsheets().values().get(
             spreadsheetId=GOOGLE_SHEET_ID,
-            range='Customers!A:L'
+            range='Customers!A:M'
         ).execute()
 
         rows = result.get('values', [])
@@ -221,13 +224,14 @@ def get_customer_profile(user_id: str) -> Optional[dict]:
                     'name': row[2] if len(row) > 2 else '',
                     'first_seen': row[3] if len(row) > 3 else '',
                     'last_seen': row[4] if len(row) > 4 else '',
-                    'total_orders': int(row[5]) if len(row) > 5 and row[5] else 0,
-                    'lifetime_value': float(row[6]) if len(row) > 6 and row[6] else 0.0,
-                    'acquisition_source': row[7] if len(row) > 7 else 'LINE',
-                    'current_journey_stage': row[8] if len(row) > 8 else 'Initial Contact',
-                    'segment': row[9] if len(row) > 9 else 'New',
-                    'favorite_strains': row[10] if len(row) > 10 else '',
-                    'tags': row[11] if len(row) > 11 else ''
+                    'language_preference': row[5] if len(row) > 5 else 'thai',
+                    'total_orders': int(row[6]) if len(row) > 6 and row[6] else 0,
+                    'lifetime_value': float(row[7]) if len(row) > 7 and row[7] else 0.0,
+                    'acquisition_source': row[8] if len(row) > 8 else 'LINE',
+                    'current_journey_stage': row[9] if len(row) > 9 else 'Initial Contact',
+                    'segment': row[10] if len(row) > 10 else 'New',
+                    'favorite_strains': row[11] if len(row) > 11 else '',
+                    'tags': row[12] if len(row) > 12 else ''
                 }
 
         return None
@@ -279,6 +283,7 @@ def create_or_update_customer_profile(user_id: str, phone: str = "", name: str =
                     name or existing['name'],
                     existing['first_seen'],
                     now,  # last_seen
+                    existing.get('language_preference', 'thai'),  # language_preference
                     total_orders,
                     lifetime_value,
                     existing['acquisition_source'],
@@ -290,7 +295,7 @@ def create_or_update_customer_profile(user_id: str, phone: str = "", name: str =
 
                 sheets_service.spreadsheets().values().update(
                     spreadsheetId=GOOGLE_SHEET_ID,
-                    range=f'Customers!A{row_index}:L{row_index}',
+                    range=f'Customers!A{row_index}:M{row_index}',
                     valueInputOption='USER_ENTERED',
                     body={'values': [update_row]}
                 ).execute()
@@ -303,6 +308,7 @@ def create_or_update_customer_profile(user_id: str, phone: str = "", name: str =
                 name,
                 now,  # first_seen
                 now,  # last_seen
+                'thai',  # language_preference (default)
                 1 if order_total > 0 else 0,  # total_orders
                 order_total,  # lifetime_value
                 'LINE',  # acquisition_source
@@ -314,7 +320,7 @@ def create_or_update_customer_profile(user_id: str, phone: str = "", name: str =
 
             sheets_service.spreadsheets().values().append(
                 spreadsheetId=GOOGLE_SHEET_ID,
-                range='Customers!A:L',
+                range='Customers!A:M',
                 valueInputOption='USER_ENTERED',
                 insertDataOption='INSERT_ROWS',
                 body={'values': [new_row]}
@@ -436,6 +442,93 @@ def smart_update_customer_profile(user_id: str, message: str):
 
     except Exception as e:
         print(f"Error in smart profile update: {e}")
+
+def detect_language_from_message(message: str) -> Optional[str]:
+    """
+    Detect language from flag emoji or text patterns
+    Returns: 'thai', 'english', 'chinese', or None
+    """
+    # Flag emoji detection
+    flag_mappings = {
+        '🇹🇭': 'thai',
+        '🇬🇧': 'english',
+        '🇺🇸': 'english',
+        '🇨🇳': 'chinese',
+    }
+
+    for flag, lang in flag_mappings.items():
+        if flag in message:
+            return lang
+
+    # Text-based language switching
+    message_lower = message.lower().strip()
+
+    # Explicit language commands
+    if message_lower in ['thai', 'ไทย', 'th']:
+        return 'thai'
+    elif message_lower in ['english', 'en', 'eng']:
+        return 'english'
+    elif message_lower in ['chinese', 'zh', '中文', 'cn']:
+        return 'chinese'
+
+    # Auto-detect from script (basic heuristic)
+    if any('\u0e00' <= char <= '\u0e7f' for char in message):  # Thai characters
+        return 'thai'
+    elif any('\u4e00' <= char <= '\u9fff' for char in message):  # Chinese characters
+        return 'chinese'
+
+    return None  # Default to existing preference or English
+
+def update_customer_language(user_id: str, language: str):
+    """
+    Update customer's language preference in profile
+    """
+    if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
+        return
+
+    try:
+        profile = get_customer_profile(user_id)
+        if profile:
+            # Update language preference (column F - index 5)
+            result = sheets_service.spreadsheets().values().get(
+                spreadsheetId=GOOGLE_SHEET_ID,
+                range='Customers!A:A'
+            ).execute()
+            rows = result.get('values', [])
+
+            for i, row in enumerate(rows):
+                if row and row[0] == user_id:
+                    row_index = i + 1
+                    # Update just the language column
+                    sheets_service.spreadsheets().values().update(
+                        spreadsheetId=GOOGLE_SHEET_ID,
+                        range=f'Customers!F{row_index}',
+                        valueInputOption='USER_ENTERED',
+                        body={'values': [[language]]}
+                    ).execute()
+                    print(f"✅ Updated language to {language} for user {user_id}")
+                    break
+
+    except Exception as e:
+        print(f"Error updating language preference: {e}")
+
+def get_greeting_message(language: str = 'thai') -> str:
+    """
+    Get greeting message with language switching options
+    """
+    languages = CUSTOMER_CONFIG.get('supported_languages', {})
+
+    if language not in languages:
+        language = 'thai'  # Default
+
+    greeting = languages.get(language, {}).get('greeting', 'Welcome to CannaPeace 🌿')
+
+    # Get language switch prompt
+    templates = CUSTOMER_CONFIG.get('templates', {})
+    lang_switch = templates.get('language_switch_prompt', {}).get(language,
+        "🌐 Switch language: 🇹🇭 Thai  |  🇬🇧 English  |  🇨🇳 Chinese")
+
+    return f"{greeting}\n\n{lang_switch}"
 
 # Initialize CRM sheets on startup (with detailed logging)
 CRM_SETUP_STATUS = {"success": False, "error": None, "sheets_created": []}
@@ -723,6 +816,36 @@ def handle_message(event):
         # v2.0: Smart extraction - capture phone/name from conversation
         smart_update_customer_profile(user_id, message_text)
 
+        # v2.0: Language detection and switching
+        detected_language = detect_language_from_message(message_text)
+        if detected_language:
+            update_customer_language(user_id, detected_language)
+            # Send confirmation in new language
+            languages = CUSTOMER_CONFIG.get('supported_languages', {})
+            lang_info = languages.get(detected_language, {})
+            confirmation_msg = f"✅ {lang_info.get('greeting', 'Language updated!')}\n\n{CUSTOMER_CONFIG.get('templates', {}).get('language_switch_prompt', {}).get(detected_language, '')}"
+
+            if line_bot_api:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=confirmation_msg)
+                )
+            return  # Don't process further, just acknowledge language change
+
+        # Get customer's language preference
+        current_language = profile.get('language_preference', 'thai') if profile else 'thai'
+
+        # Check if this is first message (send greeting)
+        is_first_message = not profile or profile.get('total_messages', 0) == 0
+        if is_first_message:
+            greeting = get_greeting_message(current_language)
+            if line_bot_api:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=greeting)
+                )
+            return
+
         # Show typing indicator immediately
         if line_bot_api and hasattr(event.source, 'user_id'):
             try:
@@ -759,8 +882,18 @@ def handle_message(event):
             for p in config["products"]
         ])
 
+        # Language instruction based on customer preference
+        language_instructions = {
+            'thai': "RESPOND IN THAI (ตอบเป็นภาษาไทย). Be polite and use ค่ะ/ครับ.",
+            'english': "RESPOND IN ENGLISH. Be friendly and professional.",
+            'chinese': "RESPOND IN CHINESE (用中文回复). Be polite and professional."
+        }
+        lang_instruction = language_instructions.get(current_language, language_instructions['thai'])
+
         # Conversational AI prompt
-        prompt = f"""You are a friendly customer service agent for CannaPeace (แคนนาพีซ), a premium cannabis shop in Thailand.
+        prompt = f"""You are a friendly customer service agent for CannaPeace (แคนนาพีซ / 大麻和平), a premium cannabis shop in Thailand.
+
+**LANGUAGE:** {lang_instruction}
 
 CONVERSATION HISTORY:
 {history_text if history_text else "(New conversation)"}
@@ -772,7 +905,7 @@ YOUR PRODUCTS:
 {products_info}
 
 YOUR ROLE:
-1. If greeting (hi/hello/สวัสดี) → Greet warmly in Thai/English
+1. If greeting (hi/hello/สวัสดี/你好) → Greet warmly in customer's language
 2. If asking about menu/products (what do you have/menu/รายการ) → Show the menu with short descriptions
 3. If asking about SPECIFIC strain → Say "SEND_IMAGE:strain_name" then describe it in detail
 4. If placing an order:

@@ -3,7 +3,29 @@
   "business_name_thai": "แคนนาพีซ",
   "business_name_chinese": "大麻和平",
 
-  "supported_languages": ["thai", "english"],
+  "supported_languages": {
+    "thai": {
+      "code": "th",
+      "flag": "🇹🇭",
+      "name": "ไทย",
+      "name_local": "ไทย",
+      "greeting": "สวัสดีค่ะ! ยินดีต้อนรับสู่ CannaPeace 🌿"
+    },
+    "english": {
+      "code": "en",
+      "flag": "🇬🇧",
+      "name": "English",
+      "name_local": "English",
+      "greeting": "Hello! Welcome to CannaPeace 🌿"
+    },
+    "chinese": {
+      "code": "zh",
+      "flag": "🇨🇳",
+      "name": "Chinese",
+      "name_local": "中文",
+      "greeting": "你好！欢迎来到 CannaPeace 🌿"
+    }
+  },
 
   "products": [
     {"name_english": "Cap Junky", "name_thai": "แคปจั๊งกี้", "strain_type": "Hybrid", "price_per_gram": 450, "thc": "28%", "description": "Relaxing hybrid with sweet, earthy flavors", "image": "capjunky.jpg"},
@@ -20,11 +42,19 @@
   "currency_symbol": "฿",
 
   "templates": {
+    "language_switch_prompt": {
+      "thai": "🌐 **เปลี่ยนภาษา / Switch Language:**\nส่งธงชาติเพื่อเปลี่ยนภาษา:\n🇹🇭 ไทย  |  🇬🇧 English  |  🇨🇳 中文",
+      "english": "🌐 **Switch Language:**\nSend a flag emoji to change language:\n🇹🇭 Thai  |  🇬🇧 English  |  🇨🇳 Chinese",
+      "chinese": "🌐 **切换语言:**\n发送国旗表情符号以更改语言:\n🇹🇭 泰语  |  🇬🇧 英语  |  🇨🇳 中文"
+    },
+
     "daily_summary_thai": "📊 สรุปยอดวันนี้\n\n📦 ออเดอร์: {total_orders} รายการ\n💰 ยอดรวม: {total_revenue:,.0f} บาท\n\n🔥 สายพันธุ์ยอดนิยม:\n{top_items}",
     "daily_summary_english": "📊 Daily Summary\n\n📦 Orders: {total_orders}\n💰 Total: {currency}{total_revenue:,.0f}\n\n🔥 Top Strains:\n{top_items}",
+    "daily_summary_chinese": "📊 今日总结\n\n📦 订单: {total_orders}\n💰 总计: {currency}{total_revenue:,.0f}\n\n🔥 热门品种:\n{top_items}",
 
     "order_received_thai": "✅ รับออเดอร์แล้วค่ะ!\n\n🌿 รายการ: {items}\n💰 รวม: {total} บาท\n\n✨ ขอบคุณค่ะ - CannaPeace",
-    "order_received_english": "✅ Order confirmed!\n\n🌿 Items: {items}\n💰 Total: {currency}{total}\n\n✨ Thank you - CannaPeace"
+    "order_received_english": "✅ Order confirmed!\n\n🌿 Items: {items}\n💰 Total: {currency}{total}\n\n✨ Thank you - CannaPeace",
+    "order_received_chinese": "✅ 订单已确认!\n\n🌿 商品: {items}\n💰 总计: {currency}{total}\n\n✨ 谢谢 - CannaPeace"
   },
 
   "parsing_config": {
