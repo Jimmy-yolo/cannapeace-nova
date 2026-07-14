@@ -836,7 +836,8 @@ def handle_message(event):
         current_language = profile.get('language_preference', 'thai') if profile else 'thai'
 
         # Check if this is first message (send greeting)
-        is_first_message = not profile or profile.get('total_messages', 0) == 0
+        # Only send greeting if profile doesn't exist yet (absolute first contact)
+        is_first_message = not profile
         if is_first_message:
             greeting = get_greeting_message(current_language)
             if line_bot_api:
