@@ -1320,8 +1320,22 @@ Respond now:"""
             # Add text reply with Quick Reply buttons if menu is shown OR strain image is sent
             text_message = TextSendMessage(text=bot_reply)
 
+            # Detect if menu is being shown (works for all languages)
+            is_menu_response = False
+
+            # Check if user asked for menu/products
+            menu_keywords = ['menu', 'รายการ', '菜单', 'меню', 'メニュー', '메뉴', 'carte',
+                           'products', 'strains', 'what do you have', 'ดูเมนู', '看看菜单']
+            if any(keyword in message_text.lower() for keyword in menu_keywords):
+                is_menu_response = True
+
+            # Or check if response contains multiple strain names (indicates menu)
+            strain_count = sum(1 for strain in STRAIN_MENU if strain['name'] in bot_reply)
+            if strain_count >= 3:  # If 3+ strain names appear, it's likely a menu
+                is_menu_response = True
+
             # Add interactive Quick Reply buttons for easy strain browsing
-            if "**CannaPeace Menu**" in bot_reply or "CannaPeace Menu" in bot_reply:
+            if is_menu_response:
                 # Menu is shown - add strain buttons
                 text_message.quick_reply = create_menu_quick_reply()
                 print("🎯 Added Quick Reply buttons for menu")
