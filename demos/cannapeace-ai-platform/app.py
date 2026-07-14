@@ -27,7 +27,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage, AudioSendMessage
+from linebot.models import MessageEvent, FollowEvent, TextMessage, TextSendMessage, ImageSendMessage, AudioSendMessage
 import anthropic
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -535,9 +535,145 @@ def update_customer_language(user_id: str, language: str):
     except Exception as e:
         print(f"Error updating language preference: {e}")
 
+def get_welcome_message(language: str = 'thai') -> str:
+    """
+    Get PROACTIVE welcome message for new followers
+    Emphasizes it's an interactive chatbot, not a broadcast channel
+    """
+    welcome_messages = {
+        'thai': """🌿 สวัสดีค่ะ! ยินดีต้อนรับสู่ CannaPeace
+
+ฉันเป็นแชทบอท AI ที่พร้อมช่วยคุณตลอด 24/7! 💬
+
+🎯 ฉันช่วยอะไรคุณได้บ้าง?
+• ดูเมนูสายพันธุ์กัญชาทั้งหมด
+• แนะนำสายพันธุ์ที่เหมาะกับคุณ
+• สั่งสินค้า (ง่ายมาก!)
+• ตอบคำถามทุกเรื่อง
+
+💬 แค่พิมพ์คุยมาได้เลย! เช่น:
+"ดูเมนู" | "แนะนำหน่อย" | "สั่งของ"
+
+🌐 **เปลี่ยนภาษา:**
+TH | EN | 中文 | RU | 日本語 | 한국어 | FR
+
+มีอะไรให้ช่วยไหมคะ? 😊""",
+
+        'english': """🌿 Hey! Welcome to CannaPeace
+
+I'm your AI chatbot assistant, here 24/7! 💬
+
+🎯 How can I help you?
+• Browse our full strain menu
+• Get personalized recommendations
+• Place orders (super easy!)
+• Answer any questions
+
+💬 Just chat with me! Try:
+"Show menu" | "Recommend" | "Order"
+
+🌐 **Switch Language:**
+TH | EN | 中文 | RU | 日本語 | 한국어 | FR
+
+What can I help you with today? 😊""",
+
+        'chinese': """🌿 嗨！欢迎来到 CannaPeace
+
+我是您的 AI 聊天机器人助手，24/7 在线！💬
+
+🎯 我能帮您什么？
+• 浏览完整的品种菜单
+• 获得个性化推荐
+• 下订单（超简单！）
+• 回答任何问题
+
+💬 直接和我聊天！试试：
+"显示菜单" | "推荐" | "订购"
+
+🌐 **切换语言:**
+TH | EN | 中文 | RU | 日本語 | 한국어 | FR
+
+今天需要什么帮助？😊""",
+
+        'russian': """🌿 Привет! Добро пожаловать в CannaPeace
+
+Я ваш AI чат-бот помощник, доступен 24/7! 💬
+
+🎯 Чем могу помочь?
+• Посмотреть меню всех сортов
+• Получить персональные рекомендации
+• Оформить заказ (очень просто!)
+• Ответить на любые вопросы
+
+💬 Просто напишите мне! Попробуйте:
+"Меню" | "Посоветуй" | "Заказать"
+
+🌐 **Сменить язык:**
+TH | EN | 中文 | RU | 日本語 | 한국語 | FR
+
+Чем могу помочь сегодня? 😊""",
+
+        'japanese': """🌿 こんにちは！CannaPeaceへようこそ
+
+私はあなたの AI チャットボットアシスタントです。24時間対応！💬
+
+🎯 どのようにお手伝いできますか？
+• 全品種メニューを閲覧
+• パーソナライズされた推奨
+• 注文（とても簡単！）
+• あらゆる質問に回答
+
+💬 チャットしてください！試してみて：
+"メニュー表示" | "おすすめ" | "注文"
+
+🌐 **言語切り替え:**
+TH | EN | 中文 | RU | 日本語 | 한국어 | FR
+
+今日は何かお手伝いできますか？😊""",
+
+        'korean': """🌿 안녕하세요! CannaPeace에 오신 것을 환영합니다
+
+저는 24시간 이용 가능한 AI 챗봇 도우미입니다! 💬
+
+🎯 어떻게 도와드릴까요?
+• 전체 품종 메뉴 보기
+• 맞춤 추천받기
+• 주문하기 (아주 쉬워요!)
+• 모든 질문에 답변
+
+💬 채팅하세요! 예시:
+"메뉴 보기" | "추천" | "주문"
+
+🌐 **언어 전환:**
+TH | EN | 中文 | RU | 日本語 | 한국어 | FR
+
+오늘 무엇을 도와드릴까요? 😊""",
+
+        'french': """🌿 Salut ! Bienvenue à CannaPeace
+
+Je suis votre assistant chatbot AI, disponible 24/7 ! 💬
+
+🎯 Comment puis-je vous aider ?
+• Parcourir le menu complet
+• Obtenir des recommandations personnalisées
+• Passer commande (super facile !)
+• Répondre à toutes vos questions
+
+💬 Chattez avec moi ! Essayez :
+"Menu" | "Recommander" | "Commander"
+
+🌐 **Changer de langue :**
+TH | EN | 中文 | RU | 日本語 | 한국어 | FR
+
+Que puis-je faire pour vous aujourd'hui ? 😊"""
+    }
+
+    return welcome_messages.get(language, welcome_messages['thai'])
+
 def get_greeting_message(language: str = 'thai') -> str:
     """
     Get greeting message with language switching options
+    (Used when customer sends first message)
     """
     languages = CUSTOMER_CONFIG.get('supported_languages', {})
 
@@ -1177,8 +1313,72 @@ Respond now:"""
                 TextSendMessage(text="❌ ขออภัยค่ะ เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่อีกครั้งค่ะ")
             )
 
+def handle_follow(event):
+    """Handle when user adds bot as friend (Follow Event)"""
+    try:
+        user_id = event.source.user_id if hasattr(event.source, 'user_id') else "unknown"
+        print(f"🎉 New follower! User ID: {user_id}")
+
+        # Create customer profile immediately
+        profile = get_customer_profile(user_id)
+        if not profile:
+            # Check if they came from attribution link
+            attribution_source = "LINE_Follow"
+            # Try to get attribution from tracking (if they clicked a link recently)
+            for ref_id, attr_data in attribution_tracking.items():
+                if ref_id:  # If there's any recent attribution
+                    attribution_source = f"{attr_data['source']}_{attr_data['campaign']}"
+                    print(f"✅ Attributed new follower to: {attribution_source}")
+                    break
+
+            create_or_update_customer_profile(user_id, attribution_source=attribution_source)
+            profile = get_customer_profile(user_id)
+
+        # Get language preference (default: thai)
+        current_language = profile.get('language_preference', 'thai') if profile else 'thai'
+
+        # Send PROACTIVE welcome message with voice + text
+        if line_bot_api:
+            messages = []
+
+            # 1. Voice greeting
+            base_url = os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
+            if not base_url.startswith("http"):
+                base_url = f"https://{base_url}"
+
+            voice_url = f"{base_url}/greeting-voice"
+            messages.append(AudioSendMessage(
+                original_content_url=voice_url,
+                duration=10000
+            ))
+
+            # 2. Welcome text message (emphasize it's a chatbot)
+            welcome_text = get_welcome_message(current_language)
+            messages.append(TextSendMessage(text=welcome_text))
+
+            # Send both messages
+            line_bot_api.reply_message(event.reply_token, messages)
+
+            print(f"✅ Sent proactive welcome to new follower: {user_id}")
+
+    except Exception as e:
+        print(f"❌ Error handling follow event: {e}")
+        import traceback
+        traceback.print_exc()
+
+        # Send simple welcome as fallback
+        if line_bot_api:
+            try:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="สวัสดีค่ะ! ยินดีต้อนรับสู่ CannaPeace 🌿")
+                )
+            except:
+                pass
+
 # Register handler only if LINE is configured
 if handler:
+    handler.add(FollowEvent)(handle_follow)  # Handle when user adds bot as friend
     handler.add(MessageEvent, message=TextMessage)(handle_message)
 
 @app.get("/daily-summary")
