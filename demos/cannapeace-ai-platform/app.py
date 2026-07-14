@@ -808,10 +808,14 @@ def handle_message(event):
         # v2.0: Log incoming message
         log_message(user_id, 'incoming', message_text)
 
-        # v2.0: Create/update customer profile on first contact
+        # v2.0: Check if this is first message BEFORE creating profile
         profile = get_customer_profile(user_id)
+        is_first_message = not profile
+
+        # v2.0: Create/update customer profile on first contact
         if not profile:
             create_or_update_customer_profile(user_id)
+            profile = get_customer_profile(user_id)  # Reload profile after creation
 
         # v2.0: Smart extraction - capture phone/name from conversation
         smart_update_customer_profile(user_id, message_text)
@@ -835,9 +839,7 @@ def handle_message(event):
         # Get customer's language preference
         current_language = profile.get('language_preference', 'thai') if profile else 'thai'
 
-        # Check if this is first message (send greeting)
-        # Only send greeting if profile doesn't exist yet (absolute first contact)
-        is_first_message = not profile
+        # Send greeting on first message only
         if is_first_message:
             greeting = get_greeting_message(current_language)
             if line_bot_api:
