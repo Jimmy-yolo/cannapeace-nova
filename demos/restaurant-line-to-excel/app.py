@@ -338,9 +338,15 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
 
 def handle_message(event):
     """Handle incoming LINE messages - Conversational AI version"""
+    import time
+    start_time = time.time()
+    timings = {}
+
     try:
         message_text = event.message.text
         user_id = event.source.user_id if hasattr(event.source, 'user_id') else "demo_user"
+
+        print(f"⏱️ [PERF] Message received from {user_id}: '{message_text[:50]}...'")
 
         # Check if Claude is configured
         if not anthropic_client:
@@ -352,6 +358,7 @@ def handle_message(event):
             return
 
         # Load conversation history
+        prep_start = time.time()
         if user_id not in conversation_memory:
             conversation_memory[user_id] = []
 
@@ -364,6 +371,7 @@ def handle_message(event):
 
         # Load product catalog
         config = json.loads(Path("customer_config.json").read_text())
+        timings['prep'] = time.time() - prep_start
         products_info = "\n".join([
             f"- {p['name_english']} ({p['name_thai']}): {p['price_per_gram']}฿/g - {p['strain_type']} {p['thc']} THC"
             for p in config["products"]
@@ -421,11 +429,13 @@ WHEN USER ASKS ABOUT SPECIFIC STRAIN:
 Respond now:"""
 
         # Call Claude
+        claude_start = time.time()
         response = anthropic_client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}]
         )
+        timings['claude_api'] = time.time() - claude_start
 
         bot_reply = response.content[0].text.strip()
 
@@ -452,6 +462,7 @@ Respond now:"""
 
                 # Save to Google Sheets
                 if sheets_service and GOOGLE_SHEET_ID != "DEMO_SHEET":
+                    sheets_start = time.time()
                     items_str = ", ".join([f"{item['name']} x{item['quantity']}g" for item in order_data["items"]])
                     row = [
                         datetime.now().isoformat(),
@@ -470,6 +481,7 @@ Respond now:"""
                         insertDataOption='INSERT_ROWS',
                         body=body
                     ).execute()
+                    timings['google_sheets'] = time.time() - sheets_start
 
                     print(f"✅ Order saved to sheet for user {user_id}")
 
@@ -482,6 +494,7 @@ Respond now:"""
         # Check if bot wants to send product image
         image_to_send = None
         if "SEND_IMAGE:" in bot_reply:
+            img_start = time.time()
             try:
                 # Extract strain name
                 image_marker = "SEND_IMAGE:"
@@ -542,14 +555,17 @@ Respond now:"""
                 # Remove SEND_IMAGE marker from text
                 bot_reply = bot_reply[:bot_reply.index(image_marker)] + bot_reply[end_idx+1:]
                 bot_reply = bot_reply.strip()
+                timings['image_processing'] = time.time() - img_start
 
             except Exception as img_error:
                 print(f"Image error: {img_error}")
                 import traceback
                 traceback.print_exc()
+                timings['image_processing'] = time.time() - img_start
 
         # Send reply (image + text if applicable)
         if line_bot_api:
+            line_start = time.time()
             messages = []
 
             # Add image if requested
@@ -563,6 +579,13 @@ Respond now:"""
             messages.append(TextSendMessage(text=bot_reply))
 
             line_bot_api.reply_message(event.reply_token, messages)
+            timings['line_api'] = time.time() - line_start
+
+        # Log performance summary
+        total_time = time.time() - start_time
+        timings['total'] = total_time
+        print(f"⏱️ [PERF] Total: {total_time:.2f}s | " +
+              " | ".join([f"{k}: {v:.2f}s" for k, v in timings.items() if k != 'total']))
 
     except Exception as e:
         print(f"Error handling message: {e}")
