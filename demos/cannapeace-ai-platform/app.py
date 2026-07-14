@@ -98,6 +98,269 @@ else:
 conversation_memory = {}
 MAX_CONVERSATION_HISTORY = 10  # Keep last 10 messages per user
 
+# CRM: Customer journey stages
+JOURNEY_STAGES = [
+    "Initial Contact",
+    "Menu Inquiry",
+    "Product Question",
+    "Address Collection",
+    "Order Intent",
+    "Order Placement",
+    "Completion"
+]
+
+# CRM: Auto-setup Google Sheets structure
+def ensure_crm_sheets_exist():
+    """Ensure all CRM sheets exist with proper headers (idempotent)"""
+    if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
+        return
+
+    try:
+        # Get existing sheets
+        sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=GOOGLE_SHEET_ID).execute()
+        sheets = sheet_metadata.get('sheets', [])
+        sheet_titles = {sheet['properties']['title']: sheet['properties']['sheetId'] for sheet in sheets}
+
+        # Define sheet structures
+        crm_sheets = {
+            'Orders': [
+                'Timestamp', 'LINE_User_ID', 'Name', 'Phone', 'Items',
+                'Total', 'Address', 'Status', 'Attribution_Source'
+            ],
+            'Customers': [
+                'LINE_User_ID', 'Phone', 'Name', 'First_Seen', 'Last_Seen',
+                'Total_Orders', 'Lifetime_Value', 'Acquisition_Source',
+                'Current_Journey_Stage', 'Segment', 'Favorite_Strains', 'Tags'
+            ],
+            'Messages': [
+                'Timestamp', 'LINE_User_ID', 'Direction', 'Content',
+                'Detected_Intent', 'Journey_Stage_Before', 'Journey_Stage_After'
+            ],
+            'Journey_Events': [
+                'Event_ID', 'LINE_User_ID', 'Event_Type', 'From_Stage',
+                'To_Stage', 'Timestamp', 'Metadata'
+            ],
+            'Attribution_Links': [
+                'Link_ID', 'Channel', 'UTM_Campaign', 'UTM_Medium',
+                'UTM_Source', 'Total_Clicks', 'Total_Conversions', 'Revenue', 'Created_Date'
+            ]
+        }
+
+        # Rename Sheet1 to Orders if needed
+        if 'Sheet1' in sheet_titles and 'Orders' not in sheet_titles:
+            request = {
+                'requests': [{
+                    'updateSheetProperties': {
+                        'properties': {
+                            'sheetId': sheet_titles['Sheet1'],
+                            'title': 'Orders'
+                        },
+                        'fields': 'title'
+                    }
+                }]
+            }
+            sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=GOOGLE_SHEET_ID, body=request
+            ).execute()
+            print("✅ Renamed Sheet1 to Orders")
+            sheet_titles['Orders'] = sheet_titles.pop('Sheet1')
+
+        # Create missing sheets
+        for sheet_name, headers in crm_sheets.items():
+            if sheet_name not in sheet_titles:
+                request = {
+                    'requests': [{
+                        'addSheet': {
+                            'properties': {'title': sheet_name}
+                        }
+                    }]
+                }
+                sheets_service.spreadsheets().batchUpdate(
+                    spreadsheetId=GOOGLE_SHEET_ID, body=request
+                ).execute()
+                print(f"✅ Created sheet '{sheet_name}'")
+
+                # Add headers
+                body = {'values': [headers]}
+                sheets_service.spreadsheets().values().update(
+                    spreadsheetId=GOOGLE_SHEET_ID,
+                    range=f'{sheet_name}!A1',
+                    valueInputOption='USER_ENTERED',
+                    body=body
+                ).execute()
+                print(f"✅ Added headers to '{sheet_name}'")
+
+        print("✅ CRM sheets structure verified/created")
+
+    except Exception as e:
+        print(f"⚠️ Error setting up CRM sheets: {e}")
+        # Don't fail the app startup, just log the error
+
+# CRM: Customer Profile Management
+def get_customer_profile(user_id: str) -> Optional[dict]:
+    """Get customer profile from Customers sheet"""
+    if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
+        return None
+
+    try:
+        result = sheets_service.spreadsheets().values().get(
+            spreadsheetId=GOOGLE_SHEET_ID,
+            range='Customers!A:L'
+        ).execute()
+
+        rows = result.get('values', [])
+        if len(rows) <= 1:  # Only headers or empty
+            return None
+
+        # Find customer by LINE_User_ID (column A)
+        for row in rows[1:]:  # Skip header
+            if row and row[0] == user_id:
+                return {
+                    'line_user_id': row[0] if len(row) > 0 else '',
+                    'phone': row[1] if len(row) > 1 else '',
+                    'name': row[2] if len(row) > 2 else '',
+                    'first_seen': row[3] if len(row) > 3 else '',
+                    'last_seen': row[4] if len(row) > 4 else '',
+                    'total_orders': int(row[5]) if len(row) > 5 and row[5] else 0,
+                    'lifetime_value': float(row[6]) if len(row) > 6 and row[6] else 0.0,
+                    'acquisition_source': row[7] if len(row) > 7 else 'LINE',
+                    'current_journey_stage': row[8] if len(row) > 8 else 'Initial Contact',
+                    'segment': row[9] if len(row) > 9 else 'New',
+                    'favorite_strains': row[10] if len(row) > 10 else '',
+                    'tags': row[11] if len(row) > 11 else ''
+                }
+
+        return None
+    except Exception as e:
+        print(f"Error getting customer profile: {e}")
+        return None
+
+def create_or_update_customer_profile(user_id: str, phone: str = "", name: str = "", order_total: float = 0):
+    """Create new customer profile or update existing one"""
+    if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
+        return
+
+    try:
+        existing = get_customer_profile(user_id)
+        now = datetime.now().isoformat()
+
+        if existing:
+            # Update existing customer
+            total_orders = existing['total_orders'] + (1 if order_total > 0 else 0)
+            lifetime_value = existing['lifetime_value'] + order_total
+
+            # Determine segment
+            if lifetime_value > 10000:
+                segment = 'VIP'
+            elif total_orders >= 3:
+                segment = 'Repeat'
+            elif total_orders == 1:
+                segment = 'One-time'
+            else:
+                segment = 'New'
+
+            # Find and update row
+            result = sheets_service.spreadsheets().values().get(
+                spreadsheetId=GOOGLE_SHEET_ID,
+                range='Customers!A:A'
+            ).execute()
+            rows = result.get('values', [])
+
+            row_index = None
+            for i, row in enumerate(rows):
+                if row and row[0] == user_id:
+                    row_index = i + 1  # Sheets API uses 1-based indexing
+                    break
+
+            if row_index:
+                update_row = [
+                    user_id,
+                    phone or existing['phone'],
+                    name or existing['name'],
+                    existing['first_seen'],
+                    now,  # last_seen
+                    total_orders,
+                    lifetime_value,
+                    existing['acquisition_source'],
+                    existing['current_journey_stage'],
+                    segment,
+                    existing['favorite_strains'],
+                    existing['tags']
+                ]
+
+                sheets_service.spreadsheets().values().update(
+                    spreadsheetId=GOOGLE_SHEET_ID,
+                    range=f'Customers!A{row_index}:L{row_index}',
+                    valueInputOption='USER_ENTERED',
+                    body={'values': [update_row]}
+                ).execute()
+                print(f"✅ Updated customer profile for {user_id}")
+        else:
+            # Create new customer
+            new_row = [
+                user_id,
+                phone,
+                name,
+                now,  # first_seen
+                now,  # last_seen
+                1 if order_total > 0 else 0,  # total_orders
+                order_total,  # lifetime_value
+                'LINE',  # acquisition_source
+                'Initial Contact',  # current_journey_stage
+                'New',  # segment
+                '',  # favorite_strains
+                ''  # tags
+            ]
+
+            sheets_service.spreadsheets().values().append(
+                spreadsheetId=GOOGLE_SHEET_ID,
+                range='Customers!A:L',
+                valueInputOption='USER_ENTERED',
+                insertDataOption='INSERT_ROWS',
+                body={'values': [new_row]}
+            ).execute()
+            print(f"✅ Created new customer profile for {user_id}")
+
+    except Exception as e:
+        print(f"Error creating/updating customer profile: {e}")
+
+def log_message(user_id: str, direction: str, content: str, intent: str = ""):
+    """Log message to Messages sheet"""
+    if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
+        return
+
+    try:
+        # Get current journey stage
+        profile = get_customer_profile(user_id)
+        current_stage = profile['current_journey_stage'] if profile else 'Initial Contact'
+
+        row = [
+            datetime.now().isoformat(),
+            user_id,
+            direction,  # 'incoming' or 'outgoing'
+            content[:500],  # Limit content length
+            intent,
+            current_stage,
+            current_stage  # Will be updated if stage changes
+        ]
+
+        sheets_service.spreadsheets().values().append(
+            spreadsheetId=GOOGLE_SHEET_ID,
+            range='Messages!A:G',
+            valueInputOption='USER_ENTERED',
+            insertDataOption='INSERT_ROWS',
+            body={'values': [row]}
+        ).execute()
+
+    except Exception as e:
+        print(f"Error logging message: {e}")
+
+# Initialize CRM sheets on startup
+try:
+    ensure_crm_sheets_exist()
+except Exception as e:
+    print(f"⚠️ Could not initialize CRM sheets: {e}")
+
 # Models
 class OrderItem(BaseModel):
     name: str
@@ -360,6 +623,14 @@ def handle_message(event):
 
         print(f"⏱️ [PERF] Message received from {user_id}: '{message_text[:50]}...'")
 
+        # v2.0: Log incoming message
+        log_message(user_id, 'incoming', message_text)
+
+        # v2.0: Create/update customer profile on first contact
+        profile = get_customer_profile(user_id)
+        if not profile:
+            create_or_update_customer_profile(user_id)
+
         # Show typing indicator immediately
         if line_bot_api and hasattr(event.source, 'user_id'):
             try:
@@ -479,30 +750,44 @@ Respond now:"""
                 # Remove ORDER_COMPLETE from reply
                 bot_reply = bot_reply[:bot_reply.index("ORDER_COMPLETE:")].strip()
 
-                # Save to Google Sheets
+                # Save to Google Sheets (v2.0 CRM)
                 if sheets_service and GOOGLE_SHEET_ID != "DEMO_SHEET":
                     sheets_start = time.time()
                     items_str = ", ".join([f"{item['name']} x{item['quantity']}g" for item in order_data["items"]])
-                    row = [
+
+                    # v2.0: Save order with LINE User ID
+                    order_row = [
                         datetime.now().isoformat(),
+                        user_id,  # LINE_User_ID
                         order_data.get("customer_name", "Customer"),
                         order_data.get("phone", "Not provided"),
                         items_str,
                         order_data["total"],
-                        order_data.get("address", "") + " " + order_data.get("notes", "")
+                        order_data.get("address", "") + " " + order_data.get("notes", ""),
+                        "Completed",  # Status
+                        "LINE"  # Attribution_Source (default to LINE for now)
                     ]
 
-                    body = {'values': [row]}
+                    body = {'values': [order_row]}
                     sheets_service.spreadsheets().values().append(
                         spreadsheetId=GOOGLE_SHEET_ID,
-                        range='Sheet1!A:F',
+                        range='Orders!A:I',  # v2.0: Updated range with new columns
                         valueInputOption='USER_ENTERED',
                         insertDataOption='INSERT_ROWS',
                         body=body
                     ).execute()
+
+                    # v2.0: Create or update customer profile
+                    create_or_update_customer_profile(
+                        user_id=user_id,
+                        phone=order_data.get("phone", ""),
+                        name=order_data.get("customer_name", ""),
+                        order_total=order_data["total"]
+                    )
+
                     timings['google_sheets'] = time.time() - sheets_start
 
-                    print(f"✅ Order saved to sheet for user {user_id}")
+                    print(f"✅ Order saved + customer profile updated for {user_id}")
 
                 # Clear conversation after successful order
                 conversation_memory[user_id] = []
@@ -596,6 +881,9 @@ Respond now:"""
 
             # Add text reply
             messages.append(TextSendMessage(text=bot_reply))
+
+            # v2.0: Log outgoing message
+            log_message(user_id, 'outgoing', bot_reply)
 
             line_bot_api.reply_message(event.reply_token, messages)
             timings['line_api'] = time.time() - line_start
