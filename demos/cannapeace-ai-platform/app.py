@@ -1317,13 +1317,18 @@ Respond now:"""
                     preview_image_url=image_to_send
                 ))
 
-            # Add text reply with Quick Reply buttons if menu is shown
+            # Add text reply with Quick Reply buttons if menu is shown OR strain image is sent
             text_message = TextSendMessage(text=bot_reply)
 
-            # Detect if menu is being shown and add interactive Quick Reply buttons
+            # Add interactive Quick Reply buttons for easy strain browsing
             if "**CannaPeace Menu**" in bot_reply or "CannaPeace Menu" in bot_reply:
+                # Menu is shown - add strain buttons
                 text_message.quick_reply = create_menu_quick_reply()
                 print("🎯 Added Quick Reply buttons for menu")
+            elif image_to_send:
+                # Strain image is being sent - add strain buttons for easy browsing
+                text_message.quick_reply = create_menu_quick_reply()
+                print("🎯 Added Quick Reply buttons for strain browsing")
 
             messages.append(text_message)
 
@@ -1543,11 +1548,14 @@ def handle_postback(event):
                     ))
                     print(f"📸 Sending image for: {strain_name}")
 
-                # Add info text
-                messages.append(TextSendMessage(text=info_text))
+                # Add info text with Quick Reply buttons for easy browsing
+                text_message = TextSendMessage(text=info_text)
+                text_message.quick_reply = create_menu_quick_reply()  # Add strain buttons for easy browsing
+                messages.append(text_message)
 
                 # Send messages
                 line_bot_api.reply_message(event.reply_token, messages)
+                print(f"🎯 Added Quick Reply buttons for easy strain browsing")
 
                 # Log the interaction
                 log_message(user_id, 'incoming', strain_name)
