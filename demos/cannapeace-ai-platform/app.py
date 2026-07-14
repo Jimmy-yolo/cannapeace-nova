@@ -1488,15 +1488,13 @@ async def attribution_link_generator():
                 <div class="link-box" id="generatedLink"></div>
                 <button class="copy-btn" onclick="copyLink()">📋 Copy Link</button>
 
-                <p style="margin-top: 20px;"><strong>LINE Add Friend Link:</strong></p>
-                <div class="link-box" id="lineLink"></div>
-                <button class="copy-btn" onclick="copyLineLink()">📋 Copy LINE Link</button>
-
                 <p style="margin-top: 20px; font-size: 13px; color: #666;">
                     <strong>How to use:</strong><br>
-                    1. Share the tracking link on your chosen platform<br>
-                    2. When customers click and add the LINE bot, their source will be tracked<br>
-                    3. View analytics to see which channels perform best
+                    1. Copy and share this link on your chosen platform (TikTok, Instagram, etc.)<br>
+                    2. When customers click, they'll be redirected directly to your LINE bot<br>
+                    3. The click and source will be automatically tracked<br>
+                    4. When they message the bot, their attribution is captured<br>
+                    5. View analytics below to see which channels perform best
                 </p>
             </div>
 
@@ -1519,7 +1517,6 @@ async def attribution_link_generator():
 
         <script>
             let currentLink = '';
-            let currentLineLink = '';
 
             async function generateLink() {
                 const channel = document.getElementById('channel').value;
@@ -1541,11 +1538,9 @@ async def attribution_link_generator():
                     const data = await response.json();
 
                     document.getElementById('generatedLink').textContent = data.tracking_link;
-                    document.getElementById('lineLink').textContent = data.line_link;
                     document.getElementById('result').classList.add('show');
 
                     currentLink = data.tracking_link;
-                    currentLineLink = data.line_link;
 
                     loadStats();
                 } catch (error) {
@@ -1555,12 +1550,7 @@ async def attribution_link_generator():
 
             function copyLink() {
                 navigator.clipboard.writeText(currentLink);
-                alert('✅ Tracking link copied to clipboard!');
-            }
-
-            function copyLineLink() {
-                navigator.clipboard.writeText(currentLineLink);
-                alert('✅ LINE link copied to clipboard!');
+                alert('✅ Tracking link copied! Share it on ' + document.getElementById('channel').options[document.getElementById('channel').selectedIndex].text);
             }
 
             async function loadStats() {
@@ -1645,9 +1635,10 @@ async def create_attribution_link(request: Request):
         "medium": medium
     }
 
-@app.get("/join", response_class=HTMLResponse)
-async def join_landing_page(source: str = "direct", campaign: str = "none", medium: str = "unknown", ref: str = ""):
-    """Landing page that captures attribution and directs to LINE bot"""
+@app.get("/join")
+async def join_redirect(source: str = "direct", campaign: str = "none", medium: str = "unknown", ref: str = ""):
+    """Redirect directly to LINE bot while capturing attribution"""
+    from fastapi.responses import RedirectResponse
 
     # Track click in Google Sheets
     if sheets_service and GOOGLE_SHEET_ID != "DEMO_SHEET" and ref:
@@ -1668,136 +1659,25 @@ async def join_landing_page(source: str = "direct", campaign: str = "none", medi
                         valueInputOption='USER_ENTERED',
                         body={'values': [[current_clicks + 1]]}
                     ).execute()
-                    print(f"✅ Tracked click for link {ref}")
+                    print(f"✅ Tracked click for link {ref} (source: {source}, campaign: {campaign})")
                     break
         except Exception as e:
             print(f"⚠️ Error tracking click: {e}")
 
-    # Store attribution in session for when user contacts bot
+    # Store attribution for when user contacts bot
     attribution_tracking[ref] = {
         "source": source,
         "campaign": campaign,
         "medium": medium,
+        "ref_id": ref,
         "timestamp": datetime.now().isoformat()
     }
 
+    # Redirect directly to LINE bot
     line_bot_id = os.getenv("LINE_BOT_ID", "@cannapeace")
+    line_url = f"https://line.me/R/ti/p/{line_bot_id}"
 
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Welcome to CannaPeace 🌿</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-                margin: 0;
-                padding: 0;
-                background: linear-gradient(135deg, #2c5f2d 0%, #4a7c59 100%);
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }}
-            .container {{
-                background: white;
-                padding: 40px;
-                border-radius: 20px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                text-align: center;
-                max-width: 400px;
-                margin: 20px;
-            }}
-            h1 {{
-                color: #2c5f2d;
-                margin-top: 0;
-                font-size: 32px;
-            }}
-            .logo {{
-                font-size: 64px;
-                margin-bottom: 20px;
-            }}
-            p {{
-                color: #555;
-                line-height: 1.6;
-                margin: 20px 0;
-            }}
-            .add-friend-btn {{
-                display: inline-block;
-                background: #06C755;
-                color: white;
-                padding: 16px 40px;
-                border-radius: 30px;
-                text-decoration: none;
-                font-weight: 600;
-                font-size: 18px;
-                margin-top: 20px;
-                transition: transform 0.2s;
-            }}
-            .add-friend-btn:hover {{
-                transform: scale(1.05);
-                background: #05b04c;
-            }}
-            .line-icon {{
-                display: inline-block;
-                width: 24px;
-                height: 24px;
-                margin-right: 8px;
-                vertical-align: middle;
-            }}
-            .features {{
-                margin-top: 30px;
-                text-align: left;
-            }}
-            .feature {{
-                margin: 15px 0;
-                padding-left: 30px;
-                position: relative;
-            }}
-            .feature:before {{
-                content: "✓";
-                position: absolute;
-                left: 0;
-                color: #2c5f2d;
-                font-weight: bold;
-                font-size: 20px;
-            }}
-            .campaign-tag {{
-                display: inline-block;
-                background: #f0f8f0;
-                color: #2c5f2d;
-                padding: 6px 12px;
-                border-radius: 12px;
-                font-size: 12px;
-                margin-top: 10px;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="logo">🌿</div>
-            <h1>Welcome to CannaPeace</h1>
-            <p>Your premium cannabis experience in Thailand</p>
-
-            <div class="features">
-                <div class="feature">Browse our curated strains</div>
-                <div class="feature">Get expert recommendations</div>
-                <div class="feature">Easy ordering via LINE</div>
-                <div class="feature">Multilingual support (7 languages)</div>
-            </div>
-
-            <a href="https://line.me/R/ti/p/{line_bot_id}" class="add-friend-btn">
-                <span class="line-icon">💬</span>
-                Add Friend on LINE
-            </a>
-
-            {f'<div class="campaign-tag">Campaign: {campaign}</div>' if campaign != 'none' else ''}
-        </div>
-    </body>
-    </html>
-    """
+    return RedirectResponse(url=line_url, status_code=302)
 
 @app.get("/api/attribution-stats")
 async def get_attribution_stats():
