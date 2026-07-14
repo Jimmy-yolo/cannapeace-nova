@@ -15,7 +15,7 @@
 ### ✅ What You Already Have (Perfect Foundation!)
 
 ```
-restaurant-line-to-excel/
+cannapeace-ai-platform/
 ├── app.py (744 lines)               ✅ FastAPI + LINE webhook
 ├── customer_config.json             ✅ Product catalog (7 strains)
 ├── product_images/v6/               ✅ Strain images
