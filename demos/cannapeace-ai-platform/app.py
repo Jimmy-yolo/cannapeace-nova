@@ -1443,25 +1443,85 @@ def handle_postback(event):
                 profile = get_customer_profile(user_id)
                 language = profile.get('language_preference', 'thai') if profile else 'thai'
 
+                # Enhanced strain info with effects and use cases
+                strain_details = {
+                    "Miracle Mints": {
+                        "effects": ["😌 Relaxing", "🍬 Sweet flavor", "🌙 Evening use"],
+                        "flavor": "Sweet, minty with earthy undertones",
+                        "best_for": "Relaxation, stress relief, evening chill"
+                    },
+                    "Alien Marker": {
+                        "effects": ["💤 Deep relaxation", "😴 Sleepy", "🧘 Calming"],
+                        "flavor": "Earthy, pungent with diesel notes",
+                        "best_for": "Sleep, pain relief, deep relaxation"
+                    },
+                    "Tropical Cherry": {
+                        "effects": ["🍒 Fruity vibes", "😊 Happy", "🎨 Creative"],
+                        "flavor": "Sweet tropical cherry with fruity notes",
+                        "best_for": "Social activities, creativity, daytime use"
+                    },
+                    "Gogurtz": {
+                        "effects": ["🍰 Creamy smooth", "😌 Balanced", "✨ Euphoric"],
+                        "flavor": "Creamy, dessert-like with yogurt notes",
+                        "best_for": "Anytime use, balanced experience"
+                    },
+                    "Berry Bonds": {
+                        "effects": ["🫐 Berry sweet", "😴 Relaxing", "🌙 Evening"],
+                        "flavor": "Sweet berry with grape undertones",
+                        "best_for": "Evening relaxation, unwinding"
+                    },
+                    "Any Day": {
+                        "effects": ["⛽ Gassy", "💪 Strong", "🔥 Potent"],
+                        "flavor": "Gassy grape with fuel notes",
+                        "best_for": "Experienced users, strong effects"
+                    },
+                    "Apple Banana": {
+                        "effects": ["☀️ Uplifting", "⚡ Energizing", "😊 Happy"],
+                        "flavor": "Sweet apple-banana tropical blend",
+                        "best_for": "Daytime, creativity, socializing"
+                    }
+                }
+
+                details = strain_details.get(strain_name, {
+                    "effects": ["✨ Quality effects"],
+                    "flavor": description,
+                    "best_for": "Various uses"
+                })
+
                 # Build response based on language
                 if language == 'thai':
                     info_text = f"🌿 **{name_th}** ({name_en})\n\n"
+                    info_text += f"**ข้อมูลพื้นฐาน:**\n"
                     info_text += f"🔬 ประเภท: {strain_type}\n"
                     info_text += f"💪 THC: {thc}\n\n"
-                    info_text += f"📝 {description}\n\n"
-                    info_text += "💬 สนใจสั่งไหมคะ? พิมพ์ \"สั่ง\" เพื่อเริ่มคำสั่งซื้อค่ะ!"
+                    info_text += f"**รสชาติและกลิ่น:**\n"
+                    info_text += f"🌸 {details['flavor']}\n\n"
+                    info_text += f"**ผลลัพธ์:**\n"
+                    info_text += "\n".join(details['effects']) + "\n\n"
+                    info_text += f"**เหมาะกับ:** {details['best_for']}\n\n"
+                    info_text += "💬 สนใจสั่งไหมคะ? พิมพ์ \"สั่ง\" ได้เลยค่ะ!"
                 elif language == 'chinese':
                     info_text = f"🌿 **{name_en}**\n\n"
+                    info_text += f"**基本信息:**\n"
                     info_text += f"🔬 类型: {strain_type}\n"
                     info_text += f"💪 THC: {thc}\n\n"
-                    info_text += f"📝 {description}\n\n"
-                    info_text += "💬 想订购吗？输入\"订购\"开始订单！"
+                    info_text += f"**风味:**\n"
+                    info_text += f"🌸 {details['flavor']}\n\n"
+                    info_text += f"**效果:**\n"
+                    info_text += "\n".join(details['effects']) + "\n\n"
+                    info_text += f"**适合:** {details['best_for']}\n\n"
+                    info_text += "💬 想订购吗？输入\"订购\"即可！"
                 else:  # English or other
                     info_text = f"🌿 **{name_en}**\n\n"
+                    info_text += f"**Basics:**\n"
                     info_text += f"🔬 Type: {strain_type}\n"
                     info_text += f"💪 THC: {thc}\n\n"
-                    info_text += f"📝 {description}\n\n"
-                    info_text += "💬 Interested? Type \"order\" to place an order!"
+                    info_text += f"**Flavor & Aroma:**\n"
+                    info_text += f"🌸 {details['flavor']}\n\n"
+                    info_text += f"**Effects:**\n"
+                    info_text += "\n".join(details['effects']) + "\n\n"
+                    info_text += f"**Best For:** {details['best_for']}\n\n"
+                    info_text += "💬 Interested? Type \"order\" to get started!"
 
                 # Send strain image + info
                 messages = []
