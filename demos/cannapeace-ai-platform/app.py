@@ -262,7 +262,7 @@ def get_customer_profile(user_id: str) -> Optional[dict]:
         print(f"Error getting customer profile: {e}")
         return None
 
-def create_or_update_customer_profile(user_id: str, phone: str = "", name: str = "", order_total: float = 0):
+def create_or_update_customer_profile(user_id: str, phone: str = "", name: str = "", order_total: float = 0, attribution_source: str = ""):
     """Create new customer profile or update existing one"""
     if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
         return
@@ -309,7 +309,7 @@ def create_or_update_customer_profile(user_id: str, phone: str = "", name: str =
                     existing.get('language_preference', 'thai'),  # language_preference
                     total_orders,
                     lifetime_value,
-                    existing['acquisition_source'],
+                    existing['acquisition_source'],  # Don't overwrite existing source
                     existing['current_journey_stage'],
                     segment,
                     existing['favorite_strains'],
@@ -324,7 +324,9 @@ def create_or_update_customer_profile(user_id: str, phone: str = "", name: str =
                 ).execute()
                 print(f"✅ Updated customer profile for {user_id}")
         else:
-            # Create new customer
+            # Create new customer with attribution
+            source = attribution_source if attribution_source else 'LINE'
+
             new_row = [
                 user_id,
                 phone,
@@ -334,7 +336,7 @@ def create_or_update_customer_profile(user_id: str, phone: str = "", name: str =
                 'thai',  # language_preference (default)
                 1 if order_total > 0 else 0,  # total_orders
                 order_total,  # lifetime_value
-                'LINE',  # acquisition_source
+                source,  # acquisition_source (captured attribution!)
                 'Initial Contact',  # current_journey_stage
                 'New',  # segment
                 '',  # favorite_strains
@@ -348,7 +350,7 @@ def create_or_update_customer_profile(user_id: str, phone: str = "", name: str =
                 insertDataOption='INSERT_ROWS',
                 body={'values': [new_row]}
             ).execute()
-            print(f"✅ Created new customer profile for {user_id}")
+            print(f"✅ Created new customer profile for {user_id} (source: {source})")
 
     except Exception as e:
         print(f"Error creating/updating customer profile: {e}")
@@ -1338,6 +1340,532 @@ async def list_strain_images():
         "images": sorted(images, key=lambda x: x["strain_name"]),
         "base_url": os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
     }
+
+# ============================================================================
+# ATTRIBUTION TRACKING SYSTEM
+# ============================================================================
+
+# In-memory attribution tracking (will be stored in Google Sheets)
+attribution_tracking = {}
+
+@app.get("/admin/links", response_class=HTMLResponse)
+async def attribution_link_generator():
+    """Admin page to create and manage attribution tracking links"""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>CannaPeace - Attribution Link Generator</title>
+        <meta charset="UTF-8">
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                max-width: 900px;
+                margin: 40px auto;
+                padding: 20px;
+                background: #f5f5f5;
+            }
+            .container {
+                background: white;
+                padding: 30px;
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            h1 { color: #2c5f2d; margin-top: 0; }
+            h2 { color: #555; margin-top: 30px; }
+            .form-group {
+                margin: 20px 0;
+            }
+            label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: 600;
+                color: #333;
+            }
+            input, select {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                font-size: 14px;
+                box-sizing: border-box;
+            }
+            button {
+                background: #2c5f2d;
+                color: white;
+                padding: 12px 24px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: 600;
+            }
+            button:hover { background: #1e4620; }
+            .result {
+                margin-top: 20px;
+                padding: 15px;
+                background: #f0f8f0;
+                border: 1px solid #2c5f2d;
+                border-radius: 6px;
+                display: none;
+            }
+            .result.show { display: block; }
+            .link-box {
+                background: white;
+                padding: 12px;
+                border: 2px solid #2c5f2d;
+                border-radius: 6px;
+                font-family: monospace;
+                word-break: break-all;
+                margin: 10px 0;
+            }
+            .copy-btn {
+                background: #4a90e2;
+                padding: 8px 16px;
+                margin-top: 10px;
+                font-size: 14px;
+            }
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+                margin-top: 20px;
+            }
+            .stat-card {
+                background: #f9f9f9;
+                padding: 15px;
+                border-radius: 8px;
+                border-left: 4px solid #2c5f2d;
+            }
+            .stat-label { font-size: 12px; color: #666; }
+            .stat-value { font-size: 24px; font-weight: bold; color: #2c5f2d; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔗 Attribution Link Generator</h1>
+            <p>Create tracking links to measure which channels drive customers to CannaPeace.</p>
+
+            <h2>Create New Tracking Link</h2>
+            <div class="form-group">
+                <label>Channel / Platform</label>
+                <select id="channel">
+                    <option value="tiktok">TikTok</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="twitter">Twitter/X</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="line">LINE</option>
+                    <option value="google">Google Ads</option>
+                    <option value="email">Email</option>
+                    <option value="qr">QR Code</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Campaign Name (e.g., "summer2024", "newyear")</label>
+                <input type="text" id="campaign" placeholder="summer2024">
+            </div>
+
+            <div class="form-group">
+                <label>Medium (optional)</label>
+                <select id="medium">
+                    <option value="social">Social Media</option>
+                    <option value="paid">Paid Ad</option>
+                    <option value="organic">Organic</option>
+                    <option value="referral">Referral</option>
+                    <option value="email">Email</option>
+                    <option value="offline">Offline</option>
+                </select>
+            </div>
+
+            <button onclick="generateLink()">🎯 Generate Tracking Link</button>
+
+            <div class="result" id="result">
+                <h3>✅ Link Created!</h3>
+                <p><strong>Your Tracking Link:</strong></p>
+                <div class="link-box" id="generatedLink"></div>
+                <button class="copy-btn" onclick="copyLink()">📋 Copy Link</button>
+
+                <p style="margin-top: 20px;"><strong>LINE Add Friend Link:</strong></p>
+                <div class="link-box" id="lineLink"></div>
+                <button class="copy-btn" onclick="copyLineLink()">📋 Copy LINE Link</button>
+
+                <p style="margin-top: 20px; font-size: 13px; color: #666;">
+                    <strong>How to use:</strong><br>
+                    1. Share the tracking link on your chosen platform<br>
+                    2. When customers click and add the LINE bot, their source will be tracked<br>
+                    3. View analytics to see which channels perform best
+                </p>
+            </div>
+
+            <h2>📊 Quick Stats</h2>
+            <div class="stats" id="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Links Created</div>
+                    <div class="stat-value" id="totalLinks">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Clicks</div>
+                    <div class="stat-value" id="totalClicks">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Conversions</div>
+                    <div class="stat-value" id="totalConversions">-</div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let currentLink = '';
+            let currentLineLink = '';
+
+            async function generateLink() {
+                const channel = document.getElementById('channel').value;
+                const campaign = document.getElementById('campaign').value;
+                const medium = document.getElementById('medium').value;
+
+                if (!campaign) {
+                    alert('Please enter a campaign name');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/create-link', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ channel, campaign, medium })
+                    });
+
+                    const data = await response.json();
+
+                    document.getElementById('generatedLink').textContent = data.tracking_link;
+                    document.getElementById('lineLink').textContent = data.line_link;
+                    document.getElementById('result').classList.add('show');
+
+                    currentLink = data.tracking_link;
+                    currentLineLink = data.line_link;
+
+                    loadStats();
+                } catch (error) {
+                    alert('Error creating link: ' + error.message);
+                }
+            }
+
+            function copyLink() {
+                navigator.clipboard.writeText(currentLink);
+                alert('✅ Tracking link copied to clipboard!');
+            }
+
+            function copyLineLink() {
+                navigator.clipboard.writeText(currentLineLink);
+                alert('✅ LINE link copied to clipboard!');
+            }
+
+            async function loadStats() {
+                try {
+                    const response = await fetch('/api/attribution-stats');
+                    const data = await response.json();
+
+                    document.getElementById('totalLinks').textContent = data.total_links;
+                    document.getElementById('totalClicks').textContent = data.total_clicks;
+                    document.getElementById('totalConversions').textContent = data.total_conversions;
+                } catch (error) {
+                    console.error('Error loading stats:', error);
+                }
+            }
+
+            // Load stats on page load
+            loadStats();
+        </script>
+    </body>
+    </html>
+    """
+
+@app.post("/api/create-link")
+async def create_attribution_link(request: Request):
+    """Create a new attribution tracking link"""
+    data = await request.json()
+    channel = data.get('channel', 'unknown')
+    campaign = data.get('campaign', 'default')
+    medium = data.get('medium', 'social')
+
+    # Generate unique link ID
+    import hashlib
+    import time
+    link_id = hashlib.md5(f"{channel}_{campaign}_{time.time()}".encode()).hexdigest()[:8].upper()
+
+    # Get base URL
+    base_url = os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
+    if not base_url.startswith("http"):
+        base_url = f"https://{base_url}"
+
+    # Create tracking link
+    tracking_link = f"{base_url}/join?source={channel}&campaign={campaign}&medium={medium}&ref={link_id}"
+
+    # LINE Official Account URL (replace with your actual LINE bot link)
+    line_bot_id = os.getenv("LINE_BOT_ID", "@cannapeace")  # Your LINE@ ID
+    line_link = f"https://line.me/R/ti/p/{line_bot_id}?ref={link_id}"
+
+    # Save to Google Sheets (Attribution_Links)
+    if sheets_service and GOOGLE_SHEET_ID != "DEMO_SHEET":
+        try:
+            link_row = [
+                link_id,
+                channel,
+                campaign,
+                medium,
+                f"{channel}_{campaign}",  # UTM_Source
+                0,  # Total_Clicks
+                0,  # Total_Conversions
+                0,  # Revenue
+                datetime.now().isoformat()
+            ]
+
+            body = {'values': [link_row]}
+            sheets_service.spreadsheets().values().append(
+                spreadsheetId=GOOGLE_SHEET_ID,
+                range='Attribution_Links!A:I',
+                valueInputOption='USER_ENTERED',
+                insertDataOption='INSERT_ROWS',
+                body=body
+            ).execute()
+            print(f"✅ Created attribution link: {link_id} for {channel}/{campaign}")
+        except Exception as e:
+            print(f"⚠️ Error saving attribution link: {e}")
+
+    return {
+        "success": True,
+        "link_id": link_id,
+        "tracking_link": tracking_link,
+        "line_link": line_link,
+        "channel": channel,
+        "campaign": campaign,
+        "medium": medium
+    }
+
+@app.get("/join", response_class=HTMLResponse)
+async def join_landing_page(source: str = "direct", campaign: str = "none", medium: str = "unknown", ref: str = ""):
+    """Landing page that captures attribution and directs to LINE bot"""
+
+    # Track click in Google Sheets
+    if sheets_service and GOOGLE_SHEET_ID != "DEMO_SHEET" and ref:
+        try:
+            # Update click count for this link
+            result = sheets_service.spreadsheets().values().get(
+                spreadsheetId=GOOGLE_SHEET_ID,
+                range='Attribution_Links!A:G'
+            ).execute()
+            rows = result.get('values', [])
+
+            for i, row in enumerate(rows[1:], start=2):  # Skip header
+                if row and row[0] == ref:
+                    current_clicks = int(row[5]) if len(row) > 5 and row[5] else 0
+                    sheets_service.spreadsheets().values().update(
+                        spreadsheetId=GOOGLE_SHEET_ID,
+                        range=f'Attribution_Links!F{i}',
+                        valueInputOption='USER_ENTERED',
+                        body={'values': [[current_clicks + 1]]}
+                    ).execute()
+                    print(f"✅ Tracked click for link {ref}")
+                    break
+        except Exception as e:
+            print(f"⚠️ Error tracking click: {e}")
+
+    # Store attribution in session for when user contacts bot
+    attribution_tracking[ref] = {
+        "source": source,
+        "campaign": campaign,
+        "medium": medium,
+        "timestamp": datetime.now().isoformat()
+    }
+
+    line_bot_id = os.getenv("LINE_BOT_ID", "@cannapeace")
+
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Welcome to CannaPeace 🌿</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background: linear-gradient(135deg, #2c5f2d 0%, #4a7c59 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }}
+            .container {{
+                background: white;
+                padding: 40px;
+                border-radius: 20px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                text-align: center;
+                max-width: 400px;
+                margin: 20px;
+            }}
+            h1 {{
+                color: #2c5f2d;
+                margin-top: 0;
+                font-size: 32px;
+            }}
+            .logo {{
+                font-size: 64px;
+                margin-bottom: 20px;
+            }}
+            p {{
+                color: #555;
+                line-height: 1.6;
+                margin: 20px 0;
+            }}
+            .add-friend-btn {{
+                display: inline-block;
+                background: #06C755;
+                color: white;
+                padding: 16px 40px;
+                border-radius: 30px;
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 18px;
+                margin-top: 20px;
+                transition: transform 0.2s;
+            }}
+            .add-friend-btn:hover {{
+                transform: scale(1.05);
+                background: #05b04c;
+            }}
+            .line-icon {{
+                display: inline-block;
+                width: 24px;
+                height: 24px;
+                margin-right: 8px;
+                vertical-align: middle;
+            }}
+            .features {{
+                margin-top: 30px;
+                text-align: left;
+            }}
+            .feature {{
+                margin: 15px 0;
+                padding-left: 30px;
+                position: relative;
+            }}
+            .feature:before {{
+                content: "✓";
+                position: absolute;
+                left: 0;
+                color: #2c5f2d;
+                font-weight: bold;
+                font-size: 20px;
+            }}
+            .campaign-tag {{
+                display: inline-block;
+                background: #f0f8f0;
+                color: #2c5f2d;
+                padding: 6px 12px;
+                border-radius: 12px;
+                font-size: 12px;
+                margin-top: 10px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="logo">🌿</div>
+            <h1>Welcome to CannaPeace</h1>
+            <p>Your premium cannabis experience in Thailand</p>
+
+            <div class="features">
+                <div class="feature">Browse our curated strains</div>
+                <div class="feature">Get expert recommendations</div>
+                <div class="feature">Easy ordering via LINE</div>
+                <div class="feature">Multilingual support (7 languages)</div>
+            </div>
+
+            <a href="https://line.me/R/ti/p/{line_bot_id}" class="add-friend-btn">
+                <span class="line-icon">💬</span>
+                Add Friend on LINE
+            </a>
+
+            {f'<div class="campaign-tag">Campaign: {campaign}</div>' if campaign != 'none' else ''}
+        </div>
+    </body>
+    </html>
+    """
+
+@app.get("/api/attribution-stats")
+async def get_attribution_stats():
+    """Get attribution analytics"""
+    if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
+        return {
+            "total_links": 0,
+            "total_clicks": 0,
+            "total_conversions": 0,
+            "links": []
+        }
+
+    try:
+        # Get attribution links
+        result = sheets_service.spreadsheets().values().get(
+            spreadsheetId=GOOGLE_SHEET_ID,
+            range='Attribution_Links!A:I'
+        ).execute()
+        rows = result.get('values', [])
+
+        if len(rows) <= 1:
+            return {
+                "total_links": 0,
+                "total_clicks": 0,
+                "total_conversions": 0,
+                "links": []
+            }
+
+        links = []
+        total_clicks = 0
+        total_conversions = 0
+
+        for row in rows[1:]:  # Skip header
+            if row:
+                clicks = int(row[5]) if len(row) > 5 and row[5] else 0
+                conversions = int(row[6]) if len(row) > 6 and row[6] else 0
+
+                total_clicks += clicks
+                total_conversions += conversions
+
+                links.append({
+                    "link_id": row[0] if len(row) > 0 else "",
+                    "channel": row[1] if len(row) > 1 else "",
+                    "campaign": row[2] if len(row) > 2 else "",
+                    "clicks": clicks,
+                    "conversions": conversions
+                })
+
+        return {
+            "total_links": len(rows) - 1,
+            "total_clicks": total_clicks,
+            "total_conversions": total_conversions,
+            "links": sorted(links, key=lambda x: x['clicks'], reverse=True)
+        }
+
+    except Exception as e:
+        print(f"Error getting attribution stats: {e}")
+        return {
+            "total_links": 0,
+            "total_clicks": 0,
+            "total_conversions": 0,
+            "links": [],
+            "error": str(e)
+        }
+
+# ============================================================================
+# END ATTRIBUTION SYSTEM
+# ============================================================================
 
 if __name__ == "__main__":
     import uvicorn
