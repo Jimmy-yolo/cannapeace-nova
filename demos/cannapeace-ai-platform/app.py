@@ -193,6 +193,29 @@ def ensure_crm_sheets_exist():
                 ).execute()
                 print(f"✅ Added headers to '{sheet_name}'")
 
+        # Update Customers sheet headers if they exist (fix column order)
+        if 'Customers' in sheet_titles:
+            try:
+                result = sheets_service.spreadsheets().values().get(
+                    spreadsheetId=GOOGLE_SHEET_ID,
+                    range='Customers!A1:M1'
+                ).execute()
+                existing_headers = result.get('values', [[]])[0] if result.get('values') else []
+                correct_headers = crm_sheets['Customers']
+
+                # Update headers if they don't match
+                if existing_headers != correct_headers:
+                    body = {'values': [correct_headers]}
+                    sheets_service.spreadsheets().values().update(
+                        spreadsheetId=GOOGLE_SHEET_ID,
+                        range='Customers!A1:M1',
+                        valueInputOption='USER_ENTERED',
+                        body=body
+                    ).execute()
+                    print(f"✅ Updated Customers sheet headers (fixed column order)")
+            except Exception as e:
+                print(f"⚠️ Could not update Customers headers: {e}")
+
         print("✅ CRM sheets structure verified/created")
 
     except Exception as e:
@@ -825,9 +848,11 @@ def handle_message(event):
         if detected_language:
             update_customer_language(user_id, detected_language)
             # Send confirmation in new language
-            languages = CUSTOMER_CONFIG.get('supported_languages', {})
-            lang_info = languages.get(detected_language, {})
-            confirmation_msg = f"✅ {lang_info.get('greeting', 'Language updated!')}\n\n{CUSTOMER_CONFIG.get('templates', {}).get('language_switch_prompt', {}).get(detected_language, '')}"
+            templates = CUSTOMER_CONFIG.get('templates', {})
+            confirmation_msg = templates.get('language_switch_confirmation', {}).get(
+                detected_language,
+                '✅ Language updated!'
+            )
 
             if line_bot_api:
                 line_bot_api.reply_message(

@@ -48,6 +48,12 @@
       "chinese": "🌐 **切换语言:**\n发送国旗表情符号以更改语言:\n🇹🇭 泰语  |  🇬🇧 英语  |  🇨🇳 中文"
     },
 
+    "language_switch_confirmation": {
+      "thai": "✅ เปลี่ยนภาษาเป็นไทยเรียบร้อยแล้วค่ะ\n\nตอนนี้เราสามารถคุยกันเป็นภาษาไทยได้เลยนะคะ 😊",
+      "english": "✅ Your preferred language has been switched to English.\n\nWe can now chat in English! 😊",
+      "chinese": "✅ 您的首选语言已切换为中文。\n\n我们现在可以用中文聊天了！😊"
+    },
+
     "daily_summary_thai": "📊 สรุปยอดวันนี้\n\n📦 ออเดอร์: {total_orders} รายการ\n💰 ยอดรวม: {total_revenue:,.0f} บาท\n\n🔥 สายพันธุ์ยอดนิยม:\n{top_items}",
     "daily_summary_english": "📊 Daily Summary\n\n📦 Orders: {total_orders}\n💰 Total: {currency}{total_revenue:,.0f}\n\n🔥 Top Strains:\n{top_items}",
     "daily_summary_chinese": "📊 今日总结\n\n📦 订单: {total_orders}\n💰 总计: {currency}{total_revenue:,.0f}\n\n🔥 热门品种:\n{top_items}",
