@@ -27,7 +27,11 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, FollowEvent, TextMessage, TextSendMessage, ImageSendMessage, AudioSendMessage
+from linebot.models import (
+    MessageEvent, FollowEvent, PostbackEvent,
+    TextMessage, TextSendMessage, ImageSendMessage, AudioSendMessage,
+    QuickReply, QuickReplyButton, PostbackAction, MessageAction
+)
 import anthropic
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -59,6 +63,31 @@ SAMPLE_ORDERS = json.loads(Path("sample_orders.json").read_text()) if Path("samp
 
 # Load customer config
 CUSTOMER_CONFIG = json.loads(Path("customer_config.json").read_text()) if Path("customer_config.json").exists() else {"supported_languages": {}}
+
+# Strain menu for Quick Reply buttons
+STRAIN_MENU = [
+    {"name": "Miracle Mints", "emoji": "🍬"},
+    {"name": "Alien Marker", "emoji": "👽"},
+    {"name": "Tropical Cherry", "emoji": "🍒"},
+    {"name": "Gogurtz", "emoji": "🍰"},
+    {"name": "Berry Bonds", "emoji": "🫐"},
+    {"name": "Any Day", "emoji": "⛽"},
+    {"name": "Apple Banana", "emoji": "🍎"}
+]
+
+def create_menu_quick_reply():
+    """Create Quick Reply buttons for strain menu"""
+    quick_reply_buttons = []
+    for strain in STRAIN_MENU:
+        button = QuickReplyButton(
+            action=PostbackAction(
+                label=f"{strain['emoji']} {strain['name']}",
+                data=f"strain_info:{strain['name']}",
+                display_text=strain['name']
+            )
+        )
+        quick_reply_buttons.append(button)
+    return QuickReply(items=quick_reply_buttons)
 
 # Initialize services (with demo fallbacks)
 def get_anthropic_client():
@@ -1288,8 +1317,15 @@ Respond now:"""
                     preview_image_url=image_to_send
                 ))
 
-            # Add text reply
-            messages.append(TextSendMessage(text=bot_reply))
+            # Add text reply with Quick Reply buttons if menu is shown
+            text_message = TextSendMessage(text=bot_reply)
+
+            # Detect if menu is being shown and add interactive Quick Reply buttons
+            if "**CannaPeace Menu**" in bot_reply or "CannaPeace Menu" in bot_reply:
+                text_message.quick_reply = create_menu_quick_reply()
+                print("🎯 Added Quick Reply buttons for menu")
+
+            messages.append(text_message)
 
             # v2.0: Log outgoing message
             log_message(user_id, 'outgoing', bot_reply)
@@ -1376,9 +1412,106 @@ def handle_follow(event):
             except:
                 pass
 
+def handle_postback(event):
+    """Handle postback events from Quick Reply buttons"""
+    try:
+        user_id = event.source.user_id if hasattr(event.source, 'user_id') else "unknown"
+        postback_data = event.postback.data
+
+        print(f"🎯 Postback received from {user_id}: {postback_data}")
+
+        # Parse postback data (format: "strain_info:Strain Name")
+        if postback_data.startswith("strain_info:"):
+            strain_name = postback_data.replace("strain_info:", "").strip()
+
+            # Get strain info from customer_config.json
+            strain_info = None
+            for product in CUSTOMER_CONFIG.get('products', []):
+                if product.get('name_english') == strain_name:
+                    strain_info = product
+                    break
+
+            if strain_info and line_bot_api:
+                # Build strain info message
+                name_en = strain_info.get('name_english', strain_name)
+                name_th = strain_info.get('name_thai', '')
+                strain_type = strain_info.get('strain_type', '')
+                thc = strain_info.get('thc', '')
+                description = strain_info.get('description', '')
+
+                # Get customer's language for response
+                profile = get_customer_profile(user_id)
+                language = profile.get('language_preference', 'thai') if profile else 'thai'
+
+                # Build response based on language
+                if language == 'thai':
+                    info_text = f"🌿 **{name_th}** ({name_en})\n\n"
+                    info_text += f"🔬 ประเภท: {strain_type}\n"
+                    info_text += f"💪 THC: {thc}\n\n"
+                    info_text += f"📝 {description}\n\n"
+                    info_text += "💬 สนใจสั่งไหมคะ? พิมพ์ \"สั่ง\" เพื่อเริ่มคำสั่งซื้อค่ะ!"
+                elif language == 'chinese':
+                    info_text = f"🌿 **{name_en}**\n\n"
+                    info_text += f"🔬 类型: {strain_type}\n"
+                    info_text += f"💪 THC: {thc}\n\n"
+                    info_text += f"📝 {description}\n\n"
+                    info_text += "💬 想订购吗？输入\"订购\"开始订单！"
+                else:  # English or other
+                    info_text = f"🌿 **{name_en}**\n\n"
+                    info_text += f"🔬 Type: {strain_type}\n"
+                    info_text += f"💪 THC: {thc}\n\n"
+                    info_text += f"📝 {description}\n\n"
+                    info_text += "💬 Interested? Type \"order\" to place an order!"
+
+                # Send strain image + info
+                messages = []
+
+                # Add strain image
+                base_url = os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
+                if not base_url.startswith("http"):
+                    base_url = f"https://{base_url}"
+
+                image_filename = f"{strain_name}.png"
+                image_path = PRODUCT_IMAGES_PATH / image_filename
+
+                if image_path.exists():
+                    encoded_filename = quote(image_filename)
+                    image_url = f"{base_url}/strain-images/{encoded_filename}"
+                    messages.append(ImageSendMessage(
+                        original_content_url=image_url,
+                        preview_image_url=image_url
+                    ))
+                    print(f"📸 Sending image for: {strain_name}")
+
+                # Add info text
+                messages.append(TextSendMessage(text=info_text))
+
+                # Send messages
+                line_bot_api.reply_message(event.reply_token, messages)
+
+                # Log the interaction
+                log_message(user_id, 'incoming', strain_name)
+                log_message(user_id, 'outgoing', info_text)
+
+                print(f"✅ Sent strain info for: {strain_name} to {user_id}")
+
+    except Exception as e:
+        print(f"❌ Error handling postback: {e}")
+        import traceback
+        traceback.print_exc()
+        if line_bot_api:
+            try:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="❌ ขอโทษค่ะ เกิดข้อผิดพลาด")
+                )
+            except:
+                pass
+
 # Register handler only if LINE is configured
 if handler:
     handler.add(FollowEvent)(handle_follow)  # Handle when user adds bot as friend
+    handler.add(PostbackEvent)(handle_postback)  # Handle Quick Reply button clicks
     handler.add(MessageEvent, message=TextMessage)(handle_message)
 
 @app.get("/daily-summary")
