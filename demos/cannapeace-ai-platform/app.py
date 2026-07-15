@@ -1295,31 +1295,15 @@ def handle_message(event):
         # Get customer's language preference
         current_language = profile.get('language_preference', 'thai') if profile else 'thai'
 
-        # Send greeting on first message only
+        # Send greeting on first message only (text only, voice comes after age gate)
         if is_first_message:
             if line_bot_api:
-                # Send voice + global welcome + language selection
-                messages = []
-
-                # Add voice message if available
-                base_url = os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
-                if not base_url.startswith("http"):
-                    base_url = f"https://{base_url}"
-
-                voice_url = f"{base_url}/greeting-voice"
-                # Voice greeting: multilingual welcome (10 seconds)
-                messages.append(AudioSendMessage(
-                    original_content_url=voice_url,
-                    duration=10000  # 10 seconds
-                ))
-
                 # Global welcome message with language Quick Reply
                 welcome_text = get_first_contact_welcome()
                 text_message = TextSendMessage(text=welcome_text)
                 text_message.quick_reply = create_language_quick_reply()  # Language selection buttons
-                messages.append(text_message)
 
-                line_bot_api.reply_message(event.reply_token, messages)
+                line_bot_api.reply_message(event.reply_token, text_message)
             return
 
         # CHECK AGE VERIFICATION (Block underage users)
@@ -1699,29 +1683,14 @@ def handle_follow(event):
         # Get language preference (default: thai)
         current_language = profile.get('language_preference', 'thai') if profile else 'thai'
 
-        # Send PROACTIVE welcome message with voice + global greeting + language selection
+        # Send PROACTIVE welcome message (text only, voice comes after age gate)
         if line_bot_api:
-            messages = []
-
-            # 1. Voice greeting (multilingual welcome)
-            base_url = os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
-            if not base_url.startswith("http"):
-                base_url = f"https://{base_url}"
-
-            voice_url = f"{base_url}/greeting-voice"
-            messages.append(AudioSendMessage(
-                original_content_url=voice_url,
-                duration=10000
-            ))
-
-            # 2. Global welcome message with language Quick Reply
+            # Global welcome message with language Quick Reply
             welcome_text = get_first_contact_welcome()
             text_message = TextSendMessage(text=welcome_text)
             text_message.quick_reply = create_language_quick_reply()  # Language selection buttons
-            messages.append(text_message)
 
-            # Send both messages
-            line_bot_api.reply_message(event.reply_token, messages)
+            line_bot_api.reply_message(event.reply_token, text_message)
 
             print(f"✅ Sent proactive welcome to new follower: {user_id}")
 
@@ -2645,23 +2614,46 @@ async def get_attribution_stats():
 # END ATTRIBUTION SYSTEM
 # ============================================================================
 
-@app.get("/greeting-voice")
-async def serve_greeting_voice():
-    """Serve greeting voice message"""
-    # Check if greeting audio file exists
-    voice_file = Path("greeting_voice.m4a")
+@app.get("/greeting-voice/{language}")
+async def serve_greeting_voice(language: str = "thai"):
+    """Serve language-specific Nancy greeting voice message"""
+    # Map language codes to voice filenames
+    voice_map = {
+        "thai": "TH.mp3",
+        "english": "EN.mp3",
+        "chinese": "CN.mp3",
+        "russian": "RU.mp3",
+        "japanese": "JPN.mp3",
+        "korean": "KR.mp3",
+        "french": "FR.mp3"
+    }
+
+    # Get the appropriate voice file
+    voice_filename = voice_map.get(language, "TH.mp3")  # Default to Thai
+    voice_file = Path("Voices/Greetings") / voice_filename
+
     if voice_file.exists():
         return FileResponse(
             voice_file,
-            media_type="audio/m4a",
+            media_type="audio/mpeg",
             headers={
-                "Content-Disposition": "inline; filename=greeting.m4a"
+                "Content-Disposition": f"inline; filename=nancy_{language}.mp3"
             }
         )
     else:
-        # Return placeholder/silence if no audio file
-        # You can upload greeting_voice.m4a to add voice greeting
-        raise HTTPException(status_code=404, detail="Voice greeting not configured")
+        # Fallback to Thai if specific language not found
+        fallback_file = Path("Voices/Greetings/TH.mp3")
+        if fallback_file.exists():
+            print(f"⚠️ Voice file for {language} not found, using Thai fallback")
+            return FileResponse(
+                fallback_file,
+                media_type="audio/mpeg",
+                headers={
+                    "Content-Disposition": "inline; filename=nancy_thai.mp3"
+                }
+            )
+        else:
+            raise HTTPException(status_code=404, detail=f"Voice greeting for {language} not found")
 
 if __name__ == "__main__":
     import uvicorn
