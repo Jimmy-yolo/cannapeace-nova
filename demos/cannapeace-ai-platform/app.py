@@ -1749,9 +1749,22 @@ def handle_postback(event):
                         base_url = f"https://{base_url}"
 
                     voice_url = f"{base_url}/greeting-voice/{language}"  # Language-specific voice!
+
+                    # Duration in milliseconds (actual audio lengths)
+                    durations = {
+                        'thai': 12356,
+                        'english': 11546,
+                        'chinese': 12591,
+                        'russian': 13009,
+                        'japanese': 10997,
+                        'korean': 13244,
+                        'french': 10031
+                    }
+                    duration = durations.get(language, 12000)  # Default 12 seconds
+
                     messages.append(AudioSendMessage(
                         original_content_url=voice_url,
-                        duration=10000
+                        duration=duration
                     ))
 
                     # 2. Nancy's short text welcome
