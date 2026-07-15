@@ -114,6 +114,197 @@ def create_language_quick_reply():
 
     return QuickReply(items=quick_reply_buttons)
 
+def create_age_gate_quick_reply():
+    """Create Quick Reply buttons for age verification"""
+    buttons = [
+        QuickReplyButton(
+            action=PostbackAction(
+                label="✅ Yes, I'm 20+",
+                data="age_verified:yes",
+                display_text="Yes, I'm over 20 years old"
+            )
+        ),
+        QuickReplyButton(
+            action=PostbackAction(
+                label="❌ No, I'm under 20",
+                data="age_verified:no",
+                display_text="No, I'm under 20 years old"
+            )
+        )
+    ]
+    return QuickReply(items=buttons)
+
+def get_age_gate_message(language: str = 'thai') -> str:
+    """Get age gate message in customer's language"""
+    messages = {
+        'thai': """🔞 **ยืนยันอายุ / Age Verification**
+
+ตามกฎหมายไทย กัญชาสามารถจำหน่ายได้เฉพาะบุคคลที่มีอายุ 20 ปีขึ้นไปเท่านั้น
+
+**CannaPeace จำหน่ายกัญชาเพื่อ:**
+• การพักผ่อน (Recreational use)
+• การบำบัดแบบดั้งเดิม (Traditional therapy)
+• การใช้งานส่วนบุคคล (Personal use)
+
+⚠️ **ข้อกำหนด:**
+• ห้ามขายให้ผู้ที่อายุต่ำกว่า 20 ปี
+• ห้ามขายให้สตรีมีครรภ์หรือให้นมบุตร
+• ใช้อย่างมีความรับผิดชอบ
+
+📄 อ่านข้อกำหนดและเงื่อนไขฉบับเต็ม: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+**คุณมีอายุ 20 ปีขึ้นไปหรือไม่?**""",
+
+        'english': """🔞 **Age Verification**
+
+Under Thai law, cannabis may only be sold to individuals aged 20 years or older.
+
+**CannaPeace sells cannabis for:**
+• Recreational use
+• Traditional therapy
+• Personal use
+
+⚠️ **Requirements:**
+• Must be 20 years or older
+• Not for pregnant or breastfeeding women
+• Use responsibly
+
+📄 Read full Terms & Conditions: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+**Are you 20 years of age or older?**""",
+
+        'chinese': """🔞 **年龄验证**
+
+根据泰国法律，大麻只能出售给20岁或以上的人士。
+
+**CannaPeace 销售大麻用于:**
+• 休闲用途
+• 传统疗法
+• 个人使用
+
+⚠️ **要求：**
+• 必须年满20岁
+• 不适用于孕妇或哺乳期妇女
+• 负责任地使用
+
+📄 阅读完整条款和条件: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+**您是否年满20岁？**""",
+
+        'russian': """🔞 **Подтверждение возраста**
+
+В соответствии с законодательством Таиланда, каннабис может продаваться только лицам в возрасте 20 лет и старше.
+
+**CannaPeace продает каннабис для:**
+• Рекреационного использования
+• Традиционной терапии
+• Личного использования
+
+⚠️ **Требования:**
+• Возраст 20 лет и старше
+• Не для беременных и кормящих женщин
+• Используйте ответственно
+
+📄 Полные условия: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+**Вам 20 лет или больше?**""",
+
+        'japanese': """🔞 **年齢確認**
+
+タイの法律により、大麻は20歳以上の方にのみ販売できます。
+
+**CannaPeaceは以下の用途で大麻を販売しています：**
+• レクリエーション用
+• 伝統的な治療
+• 個人使用
+
+⚠️ **要件：**
+• 20歳以上であること
+• 妊娠中または授乳中の方には販売できません
+• 責任を持って使用してください
+
+📄 利用規約の全文: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+**あなたは20歳以上ですか？**""",
+
+        'korean': """🔞 **연령 확인**
+
+태국 법에 따라 대마초는 20세 이상인 사람에게만 판매할 수 있습니다.
+
+**CannaPeace는 다음 용도로 대마초를 판매합니다:**
+• 레크리에이션 사용
+• 전통 요법
+• 개인 사용
+
+⚠️ **요구 사항:**
+• 20세 이상이어야 함
+• 임산부 또는 수유 중인 여성 불가
+• 책임감 있게 사용하십시오
+
+📄 전체 이용약관 읽기: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+**귀하는 20세 이상입니까?**""",
+
+        'french': """🔞 **Vérification de l'âge**
+
+Selon la loi thaïlandaise, le cannabis ne peut être vendu qu'aux personnes âgées de 20 ans ou plus.
+
+**CannaPeace vend du cannabis pour:**
+• Usage récréatif
+• Thérapie traditionnelle
+• Usage personnel
+
+⚠️ **Exigences:**
+• Avoir 20 ans ou plus
+• Pas pour les femmes enceintes ou allaitantes
+• Utiliser de manière responsable
+
+📄 Lire les conditions générales complètes: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+**Avez-vous 20 ans ou plus?**"""
+    }
+    return messages.get(language, messages['thai'])
+
+def get_nancy_welcome(language: str = 'thai') -> str:
+    """Get Nancy's short welcome message (accompanies voice greeting)"""
+    messages = {
+        'thai': """ฉันชื่อ Nancy ค่ะ - เพิ่งจบ Pharmaceutical Sciences จาก จุฬาฯ มา! 🎓
+
+มีอะไรให้ช่วยไหมคะวันนี้? 😊
+พิมพ์ "ดูเมนู" เพื่อดูสายพันธุ์กัญชาทั้งหมด!""",
+
+        'english': """I'm Nancy - just graduated from Chula with a degree in Pharmaceutical Sciences! 🎓
+
+What can I help you with today? 😊
+Type "menu" to see all our strains!""",
+
+        'chinese': """我是Nancy - 刚从朱拉隆功大学药学系毕业！🎓
+
+今天有什么可以帮您的吗？😊
+输入"菜单"查看所有品种！""",
+
+        'russian': """Я Nancy - только что окончила Чулалонгкорн по специальности Фармацевтические науки! 🎓
+
+Чем могу помочь сегодня? 😊
+Напишите "меню" чтобы увидеть все сорта!""",
+
+        'japanese': """私はNancyです - チュラロンコン大学で薬学を卒業したばかりです！🎓
+
+今日は何かお手伝いできますか？😊
+「メニュー」と入力して全品種をご覧ください！""",
+
+        'korean': """저는 Nancy입니다 - 막 Chula에서 약학 학위를 받고 졸업했어요! 🎓
+
+오늘 무엇을 도와드릴까요? 😊
+"메뉴"를 입력하여 모든 품종을 확인하세요!""",
+
+        'french': """Je suis Nancy - je viens de terminer mes études en sciences pharmaceutiques à Chula! 🎓
+
+Comment puis-je vous aider aujourd'hui? 😊
+Tapez "menu" pour voir toutes nos variétés!"""
+    }
+    return messages.get(language, messages['thai'])
+
 # Initialize services (with demo fallbacks)
 def get_anthropic_client():
     if ANTHROPIC_API_KEY:
