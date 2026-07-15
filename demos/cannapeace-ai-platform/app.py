@@ -651,6 +651,1115 @@ def get_greeting_response(language: str = 'thai') -> str:
     }
     return greetings.get(language, greetings['thai'])
 
+def get_strain_info(strain_name: str, language: str = 'thai') -> Optional[str]:
+    """Get cached strain information in correct language - saves ~$0.015 per request
+
+    Returns fully localized strain description to avoid language mixing issues
+    """
+    # Normalize strain name (handle aliases)
+    strain_map = {
+        'miracle mints': 'Miracle Mints',
+        'cap junky': 'Miracle Mints',
+        'alien marker': 'Alien Marker',
+        'tropical cherry': 'Tropical Cherry',
+        'trop cherry': 'Tropical Cherry',
+        'gogurtz': 'Gogurtz',
+        'berry bonds': 'Berry Bonds',
+        'any day': 'Any Day',
+        'lcg x grapegas': 'Any Day',
+        'lcg': 'Any Day',
+        'apple banana': 'Apple Banana'
+    }
+
+    normalized_name = strain_map.get(strain_name.lower().strip())
+    if not normalized_name:
+        return None  # Strain not found, let Claude handle it
+
+    # Comprehensive strain database (all 7 strains × 7 languages)
+    strains = {
+        'thai': {
+            'Miracle Mints': """🌿 **Miracle Mints** (Cap Junky)
+
+**ข้อมูลพื้นฐาน:**
+🔬 ประเภท: Hybrid
+💪 THC: 28%
+
+**รสชาติ:**
+🍬 หวานมินต์ กลิ่นดิน
+🌿 สดชื่น ผ่อนคลาย
+
+**ผลกระทบ:**
+😌 ผ่อนคลายทั้งกายและใจ
+🌙 เหมาะกับตอนเย็น
+💭 ชัดเจน ไม่งง
+
+**เหมาะสำหรับ:** ผ่อนคลายหลังเลิกงาน, บรรเทาความเครียด
+
+💡 **คำแนะนำ:** เริ่มต้นที่ 1-2g ครั้งแรก มีกำลังค่อนข้างสูง!
+
+💬 พร้อมสั่งหรือยัง? พิมพ์ "สั่ง Miracle Mints" ได้เลยค่ะ!""",
+
+            'Alien Marker': """🌿 **Alien Marker**
+
+**ข้อมูลพื้นฐาน:**
+🔬 ประเภท: Indica
+💪 THC: 26%
+
+**รสชาติ:**
+🌍 ดิน เผ็ด
+🍇 กลิ่นพืชไม้
+
+**ผลกระทบ:**
+😴 ผ่อนคลายลึก
+🛌 ช่วยนอนหลับ
+🌙 เหมาะมากก่อนนอน
+
+**เหมาะสำหรับ:** นอนหลับ, ผ่อนคลายร่างกาย, บรรเทาอาการปวด
+
+💡 **คำแนะนำ:** Indica แรง! ใช้ตอนเย็นหรือก่อนนอนค่ะ
+
+💬 สนใจ? พิมพ์ "สั่ง Alien Marker" เลยค่ะ!""",
+
+            'Tropical Cherry': """🌿 **Tropical Cherry** (Trop Cherry)
+
+**ข้อมูลพื้นฐาน:**
+🔬 ประเภท: Hybrid
+💪 THC: 27%
+
+**รสชาติ:**
+🍒 เชอร์รี่ เขตร้อน
+🍓 ผลไม้หวาน
+🌴 สดชื่น
+
+**ผลกระทบ:**
+🌟 ผ่อนคลายแต่ไม่ง่วง
+😊 อารมณ์ดี
+💭 คิดสร้างสรรค์
+
+**เหมาะสำหรับ:** ช่วงเย็น, ฟังเพลง, พักผ่อน
+
+💡 **คำแนะนำ:** Hybrid สมดุล! ใช้ได้ทั้งกลางวันและเย็นค่ะ
+
+💬 พร้อมลอง? พิมพ์ "สั่ง Tropical Cherry" ได้เลยค่ะ!""",
+
+            'Gogurtz': """🌿 **Gogurtz**
+
+**ข้อมูลพื้นฐาน:**
+🔬 ประเภท: Hybrid
+💪 THC: 29%
+
+**รสชาติ:**
+🍰 ครีม ขนมหวาน
+🥛 นุ่มนวล
+🍪 โยเกิร์ต
+
+**ผลกระทบ:**
+😌 ผ่อนคลายสบายตัว
+🌙 เหมาะกับตอนเย็น
+✨ ไม่หนักมาก
+
+**เหมาะสำหรับ:** ผ่อนคลาย, ดูหนัง, พักผ่อน
+
+💡 **คำแนะนำ:** แรงสูง! รสชาติขนมหวานที่ชอบค่ะ
+
+💬 อยากลอง? พิมพ์ "สั่ง Gogurtz" ได้เลยค่ะ!""",
+
+            'Berry Bonds': """🌿 **Berry Bonds**
+
+**ข้อมูลพื้นฐาน:**
+🔬 ประเภท: Indica
+💪 THC: 25%
+
+**รสชาติ:**
+🫐 เบอร์รี่หวาน
+🍇 องุ่น
+🍓 ผลไม้
+
+**ผลกระทบ:**
+😴 ผ่อนคลาย
+🌙 ช่วยนอนหลับ
+💤 สงบ
+
+**เหมาะสำหรับ:** ผ่อนคลายตอนเย็น, นอนหลับ
+
+💡 **คำแนะนำ:** Indica นุ่มนวล เหมาะกับมือใหม่ค่ะ
+
+💬 สั่งได้เลย? พิมพ์ "สั่ง Berry Bonds" ค่ะ!""",
+
+            'Any Day': """🌿 **Any Day** (LCG x Grapegas)
+
+**ข้อมูลพื้นฐาน:**
+🔬 ประเภท: Hybrid
+💪 THC: 30%
+
+**รสชาติ:**
+⛽ แก๊ส แรง
+🍇 องุ่น
+🌿 พืชไม้
+
+**ผลกระทบ:**
+💪 แรงมาก!
+🌟 ยกระดับ
+😌 ผ่อนคลายลึก
+
+**เหมาะสำหรับ:** ผู้ที่ต้องการกำลังสูง, ผู้ที่มีประสบการณ์
+
+💡 **คำแนะนำ:** THC สูงสุดของเรา! เริ่มนิดเดียวนะคะ
+
+💬 มั่นใจแล้ว? พิมพ์ "สั่ง Any Day" ได้เลยค่ะ!""",
+
+            'Apple Banana': """🌿 **Apple Banana**
+
+**ข้อมูลพื้นฐาน:**
+🔬 ประเภท: Sativa
+💪 THC: 24%
+
+**รสชาติ:**
+🍎 แอปเปิล
+🍌 กล้วย
+🍓 ผลไม้สด
+
+**ผลกระทบ:**
+⚡ กระปรี้กระเปร่า
+😊 อารมณ์ดี
+💭 คิดสร้างสรรค์
+
+**เหมาะสำหรับ:** กลางวัน, ทำงาน, เข้าสังคม
+
+💡 **คำแนะนำ:** Sativa ช่วยเพิ่มพลัง! เหมาะกับตอนเช้า-บ่ายค่ะ
+
+💬 พร้อมลอง? พิมพ์ "สั่ง Apple Banana" ได้เลยค่ะ!"""
+        },
+
+        'english': {
+            'Miracle Mints': """🌿 **Miracle Mints** (Cap Junky)
+
+**Basic Info:**
+🔬 Type: Hybrid
+💪 THC: 28%
+
+**Flavor Profile:**
+🍬 Sweet minty, earthy
+🌿 Fresh, relaxing
+
+**Effects:**
+😌 Body & mind relaxation
+🌙 Perfect for evening
+💭 Clear-headed, not confusing
+
+**Best For:** After-work relaxation, stress relief
+
+💡 **Tip:** Start with 1-2g if first time - quite potent!
+
+💬 Ready to order? Type "order Miracle Mints"!""",
+
+            'Alien Marker': """🌿 **Alien Marker**
+
+**Basic Info:**
+🔬 Type: Indica
+💪 THC: 26%
+
+**Flavor Profile:**
+🌍 Earthy, spicy
+🍇 Herbal notes
+
+**Effects:**
+😴 Deep relaxation
+🛌 Sleep aid
+🌙 Perfect before bed
+
+**Best For:** Sleep, body relaxation, pain relief
+
+💡 **Tip:** Strong Indica! Use evening or before bed
+
+💬 Interested? Type "order Alien Marker"!""",
+
+            'Tropical Cherry': """🌿 **Tropical Cherry** (Trop Cherry)
+
+**Basic Info:**
+🔬 Type: Hybrid
+💪 THC: 27%
+
+**Flavor Profile:**
+🍒 Tropical cherry
+🍓 Sweet fruit
+🌴 Fresh
+
+**Effects:**
+🌟 Relaxed but not sleepy
+😊 Mood boost
+💭 Creative
+
+**Best For:** Evening, music, relaxation
+
+💡 **Tip:** Balanced Hybrid! Works day or evening
+
+💬 Want to try? Type "order Tropical Cherry"!""",
+
+            'Gogurtz': """🌿 **Gogurtz**
+
+**Basic Info:**
+🔬 Type: Hybrid
+💪 THC: 29%
+
+**Flavor Profile:**
+🍰 Creamy, dessert-like
+🥛 Smooth
+🍪 Yogurt notes
+
+**Effects:**
+😌 Comfortable relaxation
+🌙 Evening-friendly
+✨ Not too heavy
+
+**Best For:** Relaxing, watching movies, unwinding
+
+💡 **Tip:** High potency! Delicious dessert flavor
+
+💬 Interested? Type "order Gogurtz"!""",
+
+            'Berry Bonds': """🌿 **Berry Bonds**
+
+**Basic Info:**
+🔬 Type: Indica
+💪 THC: 25%
+
+**Flavor Profile:**
+🫐 Sweet berry
+🍇 Grape undertones
+🍓 Fruity
+
+**Effects:**
+😴 Relaxing
+🌙 Sleep aid
+💤 Calming
+
+**Best For:** Evening relaxation, sleep
+
+💡 **Tip:** Gentle Indica - good for beginners
+
+💬 Ready? Type "order Berry Bonds"!""",
+
+            'Any Day': """🌿 **Any Day** (LCG x Grapegas)
+
+**Basic Info:**
+🔬 Type: Hybrid
+💪 THC: 30%
+
+**Flavor Profile:**
+⛽ Gassy, strong
+🍇 Grape
+🌿 Herbal
+
+**Effects:**
+💪 Very potent!
+🌟 Uplifting
+😌 Deep relaxation
+
+**Best For:** High tolerance users, experienced consumers
+
+💡 **Tip:** Our highest THC! Start small
+
+💬 Confident? Type "order Any Day"!""",
+
+            'Apple Banana': """🌿 **Apple Banana**
+
+**Basic Info:**
+🔬 Type: Sativa
+💪 THC: 24%
+
+**Flavor Profile:**
+🍎 Apple
+🍌 Banana
+🍓 Fresh fruit
+
+**Effects:**
+⚡ Energizing
+😊 Mood boost
+💭 Creative
+
+**Best For:** Daytime, work, socializing
+
+💡 **Tip:** Sativa energy! Best for morning-afternoon
+
+💬 Want to try? Type "order Apple Banana"!"""
+        },
+
+        'chinese': {
+            'Miracle Mints': """🌿 **Miracle Mints** (Cap Junky)
+
+**基本信息:**
+🔬 类型: 混合
+💪 THC: 28%
+
+**风味:**
+🍬 甜薄荷，泥土味
+🌿 清新，放松
+
+**效果:**
+😌 身心放松
+🌙 适合晚上
+💭 头脑清醒
+
+**适合:** 下班后放松，缓解压力
+
+💡 **提示:** 如果是第一次，从1-2克开始 - 相当强效！
+
+💬 准备订购？输入"订购 Miracle Mints"！""",
+
+            'Alien Marker': """🌿 **Alien Marker**
+
+**基本信息:**
+🔬 类型: 苜蓿
+💪 THC: 26%
+
+**风味:**
+🌍 泥土，辛辣
+🍇 草本味
+
+**效果:**
+😴 深度放松
+🛌 助眠
+🌙 最适合睡前
+
+**适合:** 睡眠，身体放松，缓解疼痛
+
+💡 **提示:** 强效苜蓿！晚上或睡前使用
+
+💬 感兴趣？输入"订购 Alien Marker"！""",
+
+            'Tropical Cherry': """🌿 **Tropical Cherry** (Trop Cherry)
+
+**基本信息:**
+🔬 类型: 混合
+💪 THC: 27%
+
+**风味:**
+🍒 热带樱桃
+🍓 甜水果
+🌴 清新
+
+**效果:**
+🌟 放松但不困倦
+😊 提升情绪
+💭 创造力
+
+**适合:** 晚上，音乐，放松
+
+💡 **提示:** 平衡的混合！白天或晚上都可以
+
+💬 想试试？输入"订购 Tropical Cherry"！""",
+
+            'Gogurtz': """🌿 **Gogurtz**
+
+**基本信息:**
+🔬 类型: 混合
+💪 THC: 29%
+
+**风味:**
+🍰 奶油，甜点味
+🥛 顺滑
+🍪 酸奶味
+
+**效果:**
+😌 舒适放松
+🌙 适合晚上
+✨ 不太沉重
+
+**适合:** 放松，看电影，休息
+
+💡 **提示:** 高效力！美味的甜点味
+
+💬 感兴趣？输入"订购 Gogurtz"！""",
+
+            'Berry Bonds': """🌿 **Berry Bonds**
+
+**基本信息:**
+🔬 类型: 苜蓿
+💪 THC: 25%
+
+**风味:**
+🫐 甜浆果
+🍇 葡萄底味
+🍓 果香
+
+**效果:**
+😴 放松
+🌙 助眠
+💤 镇静
+
+**适合:** 晚间放松，睡眠
+
+💡 **提示:** 温和的苜蓿 - 适合初学者
+
+💬 准备好了？输入"订购 Berry Bonds"！""",
+
+            'Any Day': """🌿 **Any Day** (LCG x Grapegas)
+
+**基本信息:**
+🔬 类型: 混合
+💪 THC: 30%
+
+**风味:**
+⛽ 强烈气味
+🍇 葡萄
+🌿 草本
+
+**效果:**
+💪 非常强效！
+🌟 提振
+😌 深度放松
+
+**适合:** 高耐受性用户，有经验的消费者
+
+💡 **提示:** 我们最高的THC！从小量开始
+
+💬 有信心？输入"订购 Any Day"！""",
+
+            'Apple Banana': """🌿 **Apple Banana**
+
+**基本信息:**
+🔬 类型: 萨蒂瓦
+💪 THC: 24%
+
+**风味:**
+🍎 苹果
+🍌 香蕉
+🍓 新鲜水果
+
+**效果:**
+⚡ 提神
+😊 提升情绪
+💭 创造力
+
+**适合:** 白天，工作，社交
+
+💡 **提示:** 萨蒂瓦能量！最适合早上-下午
+
+💬 想试试？输入"订购 Apple Banana"！"""
+        },
+
+        'russian': {
+            'Miracle Mints': """🌿 **Miracle Mints** (Cap Junky)
+
+**Основная информация:**
+🔬 Тип: Гибрид
+💪 THC: 28%
+
+**Вкус:**
+🍬 Сладкая мята, землистый
+🌿 Свежий, расслабляющий
+
+**Эффекты:**
+😌 Расслабление тела и разума
+🌙 Идеально для вечера
+💭 Ясный ум
+
+**Подходит для:** Расслабления после работы, снятия стресса
+
+💡 **Совет:** Начните с 1-2г в первый раз - довольно мощный!
+
+💬 Готовы заказать? Напишите "заказать Miracle Mints"!""",
+
+            'Alien Marker': """🌿 **Alien Marker**
+
+**Основная информация:**
+🔬 Тип: Индика
+💪 THC: 26%
+
+**Вкус:**
+🌍 Землистый, пряный
+🍇 Травяные нотки
+
+**Эффекты:**
+😴 Глубокое расслабление
+🛌 Помощь со сном
+🌙 Идеально перед сном
+
+**Подходит для:** Сна, расслабления тела, облегчения боли
+
+💡 **Совет:** Сильная индика! Используйте вечером или перед сном
+
+💬 Интересно? Напишите "заказать Alien Marker"!""",
+
+            'Tropical Cherry': """🌿 **Tropical Cherry** (Trop Cherry)
+
+**Основная информация:**
+🔬 Тип: Гибрид
+💪 THC: 27%
+
+**Вкус:**
+🍒 Тропическая вишня
+🍓 Сладкие фрукты
+🌴 Свежий
+
+**Эффекты:**
+🌟 Расслабленный, но не сонный
+😊 Поднятие настроения
+💭 Креативность
+
+**Подходит для:** Вечера, музыки, отдыха
+
+💡 **Совет:** Сбалансированный гибрид! Работает днем или вечером
+
+💬 Хотите попробовать? Напишите "заказать Tropical Cherry"!""",
+
+            'Gogurtz': """🌿 **Gogurtz**
+
+**Основная информация:**
+🔬 Тип: Гибрид
+💪 THC: 29%
+
+**Вкус:**
+🍰 Кремовый, десертный
+🥛 Мягкий
+🍪 Йогуртовые нотки
+
+**Эффекты:**
+😌 Комфортное расслабление
+🌙 Вечерний
+✨ Не слишком тяжелый
+
+**Подходит для:** Расслабления, просмотра фильмов, отдыха
+
+💡 **Совет:** Высокая мощность! Вкусный десертный вкус
+
+💬 Интересно? Напишите "заказать Gogurtz"!""",
+
+            'Berry Bonds': """🌿 **Berry Bonds**
+
+**Основная информация:**
+🔬 Тип: Индика
+💪 THC: 25%
+
+**Вкус:**
+🫐 Сладкие ягоды
+🍇 Виноградные нотки
+🍓 Фруктовый
+
+**Эффекты:**
+😴 Расслабляющий
+🌙 Помощь со сном
+💤 Успокаивающий
+
+**Подходит для:** Вечернего расслабления, сна
+
+💡 **Совет:** Мягкая индика - хороша для новичков
+
+💬 Готовы? Напишите "заказать Berry Bonds"!""",
+
+            'Any Day': """🌿 **Any Day** (LCG x Grapegas)
+
+**Основная информация:**
+🔬 Тип: Гибрид
+💪 THC: 30%
+
+**Вкус:**
+⛽ Бензиновый, сильный
+🍇 Виноград
+🌿 Травяной
+
+**Эффекты:**
+💪 Очень мощный!
+🌟 Бодрящий
+😌 Глубокое расслабление
+
+**Подходит для:** Пользователей с высокой толерантностью, опытных потребителей
+
+💡 **Совет:** Наш самый высокий THC! Начните с малого
+
+💬 Уверены? Напишите "заказать Any Day"!""",
+
+            'Apple Banana': """🌿 **Apple Banana**
+
+**Основная информация:**
+🔬 Тип: Сатива
+💪 THC: 24%
+
+**Вкус:**
+🍎 Яблоко
+🍌 Банан
+🍓 Свежие фрукты
+
+**Эффекты:**
+⚡ Энергизирующий
+😊 Поднятие настроения
+💭 Креативность
+
+**Подходит для:** Дневного времени, работы, общения
+
+💡 **Совет:** Энергия сативы! Лучше всего утром-днем
+
+💬 Хотите попробовать? Напишите "заказать Apple Banana"!"""
+        },
+
+        'japanese': {
+            'Miracle Mints': """🌿 **Miracle Mints** (Cap Junky)
+
+**基本情報:**
+🔬 タイプ: ハイブリッド
+💪 THC: 28%
+
+**フレーバー:**
+🍬 甘いミント、土の香り
+🌿 フレッシュ、リラックス
+
+**効果:**
+😌 心身のリラックス
+🌙 夜に最適
+💭 クリアな頭
+
+**適している:** 仕事後のリラックス、ストレス解消
+
+💡 **ヒント:** 初めての場合は1-2gから - かなり強力！
+
+💬 注文準備完了？「Miracle Mints 注文」と入力！""",
+
+            'Alien Marker': """🌿 **Alien Marker**
+
+**基本情報:**
+🔬 タイプ: インディカ
+💪 THC: 26%
+
+**フレーバー:**
+🌍 土の香り、スパイシー
+🍇 ハーブの香り
+
+**効果:**
+😴 深いリラックス
+🛌 睡眠補助
+🌙 就寝前に最適
+
+**適している:** 睡眠、身体のリラックス、痛みの緩和
+
+💡 **ヒント:** 強力なインディカ！夜または就寝前に使用
+
+💬 興味がある？「Alien Marker 注文」と入力！""",
+
+            'Tropical Cherry': """🌿 **Tropical Cherry** (Trop Cherry)
+
+**基本情報:**
+🔬 タイプ: ハイブリッド
+💪 THC: 27%
+
+**フレーバー:**
+🍒 トロピカルチェリー
+🍓 甘いフルーツ
+🌴 フレッシュ
+
+**効果:**
+🌟 リラックスだが眠くない
+😊 気分向上
+💭 創造性
+
+**適している:** 夜、音楽、リラックス
+
+💡 **ヒント:** バランスの取れたハイブリッド！昼も夜もOK
+
+💬 試してみたい？「Tropical Cherry 注文」と入力！""",
+
+            'Gogurtz': """🌿 **Gogurtz**
+
+**基本情報:**
+🔬 タイプ: ハイブリッド
+💪 THC: 29%
+
+**フレーバー:**
+🍰 クリーミー、デザート風
+🥛 滑らか
+🍪 ヨーグルトの香り
+
+**効果:**
+😌 快適なリラックス
+🌙 夜向き
+✨ 重すぎない
+
+**適している:** リラックス、映画鑑賞、くつろぎ
+
+💡 **ヒント:** 高効力！美味しいデザート風味
+
+💬 興味がある？「Gogurtz 注文」と入力！""",
+
+            'Berry Bonds': """🌿 **Berry Bonds**
+
+**基本情報:**
+🔬 タイプ: インディカ
+💪 THC: 25%
+
+**フレーバー:**
+🫐 甘いベリー
+🍇 グレープの下味
+🍓 フルーティー
+
+**効果:**
+😴 リラックス
+🌙 睡眠補助
+💤 落ち着き
+
+**適している:** 夜のリラックス、睡眠
+
+💡 **ヒント:** 優しいインディカ - 初心者に良い
+
+💬 準備完了？「Berry Bonds 注文」と入力！""",
+
+            'Any Day': """🌿 **Any Day** (LCG x Grapegas)
+
+**基本情報:**
+🔬 タイプ: ハイブリッド
+💪 THC: 30%
+
+**フレーバー:**
+⛽ ガス系、強い
+🍇 グレープ
+🌿 ハーブ
+
+**効果:**
+💪 非常に強力！
+🌟 高揚感
+😌 深いリラックス
+
+**適している:** 高耐性ユーザー、経験豊富な消費者
+
+💡 **ヒント:** 最高のTHC！少量から始めて
+
+💬 自信がある？「Any Day 注文」と入力！""",
+
+            'Apple Banana': """🌿 **Apple Banana**
+
+**基本情報:**
+🔬 タイプ: サティバ
+💪 THC: 24%
+
+**フレーバー:**
+🍎 アップル
+🍌 バナナ
+🍓 フレッシュフルーツ
+
+**効果:**
+⚡ エネルギー
+😊 気分向上
+💭 創造性
+
+**適している:** 日中、仕事、社交
+
+💡 **ヒント:** サティバのエネルギー！午前〜午後に最適
+
+💬 試したい？「Apple Banana 注文」と入力！"""
+        },
+
+        'korean': {
+            'Miracle Mints': """🌿 **Miracle Mints** (Cap Junky)
+
+**기본 정보:**
+🔬 유형: 하이브리드
+💪 THC: 28%
+
+**향미:**
+🍬 달콤한 민트, 흙 향
+🌿 상쾌함, 편안함
+
+**효과:**
+😌 몸과 마음의 이완
+🌙 저녁에 완벽
+💭 맑은 정신
+
+**적합:** 퇴근 후 휴식, 스트레스 해소
+
+💡 **팁:** 처음이라면 1-2g부터 - 꽤 강력해요!
+
+💬 주문 준비? "Miracle Mints 주문" 입력!""",
+
+            'Alien Marker': """🌿 **Alien Marker**
+
+**기본 정보:**
+🔬 유형: 인디카
+💪 THC: 26%
+
+**향미:**
+🌍 흙 향, 매운맛
+🍇 허브 향
+
+**효과:**
+😴 깊은 이완
+🛌 수면 도움
+🌙 취침 전에 완벽
+
+**적합:** 수면, 신체 이완, 통증 완화
+
+💡 **팁:** 강력한 인디카! 저녁 또는 취침 전 사용
+
+💬 관심 있어요? "Alien Marker 주문" 입력!""",
+
+            'Tropical Cherry': """🌿 **Tropical Cherry** (Trop Cherry)
+
+**기본 정보:**
+🔬 유형: 하이브리드
+💪 THC: 27%
+
+**향미:**
+🍒 열대 체리
+🍓 달콤한 과일
+🌴 상쾌함
+
+**효과:**
+🌟 이완되지만 졸리지 않음
+😊 기분 향상
+💭 창의성
+
+**적합:** 저녁, 음악, 휴식
+
+💡 **팁:** 균형 잡힌 하이브리드! 낮이나 저녁에 모두 가능
+
+💬 시도해볼까요? "Tropical Cherry 주문" 입력!""",
+
+            'Gogurtz': """🌿 **Gogurtz**
+
+**기본 정보:**
+🔬 유형: 하이브리드
+💪 THC: 29%
+
+**향미:**
+🍰 크리미, 디저트 같은
+🥛 부드러움
+🍪 요거트 향
+
+**효과:**
+😌 편안한 이완
+🌙 저녁용
+✨ 너무 무겁지 않음
+
+**적합:** 휴식, 영화 감상, 편히 쉬기
+
+💡 **팁:** 높은 효력! 맛있는 디저트 풍미
+
+💬 관심 있어요? "Gogurtz 주문" 입력!""",
+
+            'Berry Bonds': """🌿 **Berry Bonds**
+
+**기본 정보:**
+🔬 유형: 인디카
+💪 THC: 25%
+
+**향미:**
+🫐 달콤한 베리
+🍇 포도 뒷맛
+🍓 과일향
+
+**효과:**
+😴 이완
+🌙 수면 도움
+💤 진정
+
+**적합:** 저녁 휴식, 수면
+
+💡 **팁:** 부드러운 인디카 - 초보자에게 좋음
+
+💬 준비됐어요? "Berry Bonds 주문" 입력!""",
+
+            'Any Day': """🌿 **Any Day** (LCG x Grapegas)
+
+**기본 정보:**
+🔬 유형: 하이브리드
+💪 THC: 30%
+
+**향미:**
+⛽ 강한 가스 향
+🍇 포도
+🌿 허브
+
+**효과:**
+💪 매우 강력!
+🌟 기분 상승
+😌 깊은 이완
+
+**적합:** 높은 내성 사용자, 경험 많은 소비자
+
+💡 **팁:** 최고 THC! 소량부터 시작
+
+💬 자신 있어요? "Any Day 주문" 입력!""",
+
+            'Apple Banana': """🌿 **Apple Banana**
+
+**기본 정보:**
+🔬 유형: 사티바
+💪 THC: 24%
+
+**향미:**
+🍎 사과
+🍌 바나나
+🍓 신선한 과일
+
+**효과:**
+⚡ 활력
+😊 기분 향상
+💭 창의성
+
+**적합:** 낮 시간, 작업, 사교
+
+💡 **팁:** 사티바 에너지! 아침-오후에 최적
+
+💬 시도해볼까요? "Apple Banana 주문" 입력!"""
+        },
+
+        'french': {
+            'Miracle Mints': """🌿 **Miracle Mints** (Cap Junky)
+
+**Informations de base:**
+🔬 Type: Hybride
+💪 THC: 28%
+
+**Profil de saveur:**
+🍬 Menthe douce, terreux
+🌿 Frais, relaxant
+
+**Effets:**
+😌 Relaxation corps et esprit
+🌙 Parfait pour le soir
+💭 Esprit clair
+
+**Idéal pour:** Détente après le travail, soulagement du stress
+
+💡 **Conseil:** Commencez avec 1-2g si première fois - assez puissant!
+
+💬 Prêt à commander? Tapez "commander Miracle Mints"!""",
+
+            'Alien Marker': """🌿 **Alien Marker**
+
+**Informations de base:**
+🔬 Type: Indica
+💪 THC: 26%
+
+**Profil de saveur:**
+🌍 Terreux, épicé
+🍇 Notes herbacées
+
+**Effets:**
+😴 Relaxation profonde
+🛌 Aide au sommeil
+🌙 Parfait avant de dormir
+
+**Idéal pour:** Sommeil, relaxation corporelle, soulagement de la douleur
+
+💡 **Conseil:** Indica forte! Utiliser le soir ou avant de dormir
+
+💬 Intéressé? Tapez "commander Alien Marker"!""",
+
+            'Tropical Cherry': """🌿 **Tropical Cherry** (Trop Cherry)
+
+**Informations de base:**
+🔬 Type: Hybride
+💪 THC: 27%
+
+**Profil de saveur:**
+🍒 Cerise tropicale
+🍓 Fruits sucrés
+🌴 Frais
+
+**Effets:**
+🌟 Détendu mais pas somnolent
+😊 Amélioration de l'humeur
+💭 Créativité
+
+**Idéal pour:** Soirée, musique, détente
+
+💡 **Conseil:** Hybride équilibré! Fonctionne jour ou soir
+
+💬 Envie d'essayer? Tapez "commander Tropical Cherry"!""",
+
+            'Gogurtz': """🌿 **Gogurtz**
+
+**Informations de base:**
+🔬 Type: Hybride
+💪 THC: 29%
+
+**Profil de saveur:**
+🍰 Crémeux, dessert
+🥛 Doux
+🍪 Notes de yaourt
+
+**Effets:**
+😌 Relaxation confortable
+🌙 Pour le soir
+✨ Pas trop lourd
+
+**Idéal pour:** Se détendre, regarder des films, se relaxer
+
+💡 **Conseil:** Haute puissance! Saveur de dessert délicieuse
+
+💬 Intéressé? Tapez "commander Gogurtz"!""",
+
+            'Berry Bonds': """🌿 **Berry Bonds**
+
+**Informations de base:**
+🔬 Type: Indica
+💪 THC: 25%
+
+**Profil de saveur:**
+🫐 Baies sucrées
+🍇 Notes de raisin
+🍓 Fruité
+
+**Effets:**
+😴 Relaxant
+🌙 Aide au sommeil
+💤 Apaisant
+
+**Idéal pour:** Détente en soirée, sommeil
+
+💡 **Conseil:** Indica doux - bon pour les débutants
+
+💬 Prêt? Tapez "commander Berry Bonds"!""",
+
+            'Any Day': """🌿 **Any Day** (LCG x Grapegas)
+
+**Informations de base:**
+🔬 Type: Hybride
+💪 THC: 30%
+
+**Profil de saveur:**
+⛽ Gazeux, fort
+🍇 Raisin
+🌿 Herbacé
+
+**Effets:**
+💪 Très puissant!
+🌟 Stimulant
+😌 Relaxation profonde
+
+**Idéal pour:** Utilisateurs à haute tolérance, consommateurs expérimentés
+
+💡 **Conseil:** Notre THC le plus élevé! Commencez petit
+
+💬 Confiant? Tapez "commander Any Day"!""",
+
+            'Apple Banana': """🌿 **Apple Banana**
+
+**Informations de base:**
+🔬 Type: Sativa
+💪 THC: 24%
+
+**Profil de saveur:**
+🍎 Pomme
+🍌 Banane
+🍓 Fruits frais
+
+**Effets:**
+⚡ Énergisant
+😊 Amélioration de l'humeur
+💭 Créativité
+
+**Idéal pour:** Journée, travail, socialisation
+
+💡 **Conseil:** Énergie sativa! Meilleur matin-après-midi
+
+💬 Envie d'essayer? Tapez "commander Apple Banana"!"""
+        }
+    }
+
+    # Get strain info in the correct language
+    language_data = strains.get(language, strains['thai'])
+    return language_data.get(normalized_name)
+
 def get_about_us_content(language: str = 'thai') -> str:
     """Get About Us / Company information (language-specific)"""
     content = {
@@ -2514,6 +3623,61 @@ def handle_message(event):
                 line_bot_api.reply_message(event.reply_token, text_msg)
             print(f"👋 Sent cached greeting ({current_language}) - Saved API call")
             return
+
+        # 4. STRAIN INFO DETECTION (saves ~$0.015 per request) - FIXES LANGUAGE MIXING!
+        # Check if message is asking about a specific strain
+        strain_names = ['miracle mints', 'cap junky', 'alien marker', 'tropical cherry', 'trop cherry',
+                       'gogurtz', 'berry bonds', 'any day', 'lcg', 'apple banana',
+                       'มิราเคิล มินท์', 'เอเลี่ยนมาร์คเกอร์', 'ทรอปิคอล เชอร์รี่', 'โกเกิร์ตซ์',
+                       'เบอร์รี่บอนด์', 'เอนี่เดย์', 'แอปเปิ้ลบานานา']
+
+        detected_strain = None
+        for strain in strain_names:
+            if strain in message_lower:
+                detected_strain = strain
+                break
+
+        if detected_strain:
+            strain_info = get_strain_info(detected_strain, current_language)
+            if strain_info:
+                # Send strain info with image and Quick Reply buttons
+                messages = []
+
+                # Map strain to image filename
+                strain_image_map = {
+                    'miracle mints': 'capjunky.jpg',
+                    'cap junky': 'capjunky.jpg',
+                    'alien marker': 'alien_marker.jpg',
+                    'tropical cherry': 'trop_cherry.jpg',
+                    'trop cherry': 'trop_cherry.jpg',
+                    'gogurtz': 'gogurtz.jpg',
+                    'berry bonds': 'berry_bonds.jpg',
+                    'any day': 'lcg_grapegas.jpg',
+                    'lcg': 'lcg_grapegas.jpg',
+                    'apple banana': 'apple_banana.jpg'
+                }
+
+                image_filename = strain_image_map.get(detected_strain.lower())
+                if image_filename:
+                    base_url = os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
+                    if not base_url.startswith("http"):
+                        base_url = f"https://{base_url}"
+
+                    image_url = f"{base_url}/strain-images/{image_filename}"
+                    messages.append(ImageSendMessage(
+                        original_content_url=image_url,
+                        preview_image_url=image_url
+                    ))
+
+                # Add text with strain info and Quick Reply buttons
+                text_msg = TextSendMessage(text=strain_info)
+                text_msg.quick_reply = create_menu_quick_reply()  # Add strain buttons for browsing
+                messages.append(text_msg)
+
+                if line_bot_api:
+                    line_bot_api.reply_message(event.reply_token, messages)
+                print(f"🌿 Sent cached strain info for '{detected_strain}' ({current_language}) - Saved API call + Fixed language mixing!")
+                return
 
         # === END OPTIMIZATION - If not cached, proceed to Claude API ===
 
