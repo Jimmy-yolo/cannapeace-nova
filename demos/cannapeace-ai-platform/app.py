@@ -89,6 +89,31 @@ def create_menu_quick_reply():
         quick_reply_buttons.append(button)
     return QuickReply(items=quick_reply_buttons)
 
+def create_language_quick_reply():
+    """Create Quick Reply buttons for language selection (7 languages fit without swiping!)"""
+    languages = [
+        {"code": "thai", "label": "🇹🇭 ไทย", "display": "Thai"},
+        {"code": "english", "label": "🇬🇧 English", "display": "English"},
+        {"code": "chinese", "label": "🇨🇳 中文", "display": "Chinese"},
+        {"code": "russian", "label": "🇷🇺 Русский", "display": "Russian"},
+        {"code": "japanese", "label": "🇯🇵 日本語", "display": "Japanese"},
+        {"code": "korean", "label": "🇰🇷 한국어", "display": "Korean"},
+        {"code": "french", "label": "🇫🇷 Français", "display": "French"}
+    ]
+
+    quick_reply_buttons = []
+    for lang in languages:
+        button = QuickReplyButton(
+            action=PostbackAction(
+                label=lang['label'],
+                data=f"language:{lang['code']}",
+                display_text=lang['display']
+            )
+        )
+        quick_reply_buttons.append(button)
+
+    return QuickReply(items=quick_reply_buttons)
+
 # Initialize services (with demo fallbacks)
 def get_anthropic_client():
     if ANTHROPIC_API_KEY:
@@ -564,9 +589,27 @@ def update_customer_language(user_id: str, language: str):
     except Exception as e:
         print(f"Error updating language preference: {e}")
 
+def get_first_contact_welcome() -> str:
+    """
+    Get GLOBAL welcome message for first contact (Follow Event or First Message)
+    Shows all language greetings to feel welcoming and international
+    """
+    return """สวัสดี / Hello / 你好 / Привет / こんにちは / 안녕하세요 / Bonjour
+
+🌿 **Welcome to CannaPeace!**
+
+I'm your AI chatbot assistant, available 24/7 to help you with:
+• Cannabis strain menu & info
+• Personalized recommendations
+• Easy ordering
+• Any questions you have
+
+💬 **What's your preferred language?**
+👇 Choose below to get started!"""
+
 def get_welcome_message(language: str = 'thai') -> str:
     """
-    Get PROACTIVE welcome message for new followers
+    Get language-specific welcome message (used after language is selected)
     Emphasizes it's an interactive chatbot, not a broadcast channel
     """
     welcome_messages = {
@@ -582,9 +625,6 @@ def get_welcome_message(language: str = 'thai') -> str:
 
 💬 แค่พิมพ์คุยมาได้เลย! เช่น:
 "ดูเมนู" | "แนะนำหน่อย" | "สั่งของ"
-
-🌐 **เปลี่ยนภาษา:**
-TH | EN | 中文 | RU | 日本語 | 한국어 | FR
 
 มีอะไรให้ช่วยไหมคะ? 😊""",
 
@@ -1031,9 +1071,8 @@ def handle_message(event):
 
         # Send greeting on first message only
         if is_first_message:
-            greeting = get_greeting_message(current_language)
             if line_bot_api:
-                # Send both voice + text greeting
+                # Send voice + global welcome + language selection
                 messages = []
 
                 # Add voice message if available
@@ -1042,14 +1081,17 @@ def handle_message(event):
                     base_url = f"https://{base_url}"
 
                 voice_url = f"{base_url}/greeting-voice"
-                # Voice greeting: "สวัสดีค่ะ! ยินดีต้อนรับสู่แคนนาพีซ" (10 seconds)
+                # Voice greeting: multilingual welcome (10 seconds)
                 messages.append(AudioSendMessage(
                     original_content_url=voice_url,
                     duration=10000  # 10 seconds
                 ))
 
-                # Add text greeting with language options
-                messages.append(TextSendMessage(text=greeting))
+                # Global welcome message with language Quick Reply
+                welcome_text = get_first_contact_welcome()
+                text_message = TextSendMessage(text=welcome_text)
+                text_message.quick_reply = create_language_quick_reply()  # Language selection buttons
+                messages.append(text_message)
 
                 line_bot_api.reply_message(event.reply_token, messages)
             return
@@ -1392,11 +1434,11 @@ def handle_follow(event):
         # Get language preference (default: thai)
         current_language = profile.get('language_preference', 'thai') if profile else 'thai'
 
-        # Send PROACTIVE welcome message with voice + text
+        # Send PROACTIVE welcome message with voice + global greeting + language selection
         if line_bot_api:
             messages = []
 
-            # 1. Voice greeting
+            # 1. Voice greeting (multilingual welcome)
             base_url = os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
             if not base_url.startswith("http"):
                 base_url = f"https://{base_url}"
@@ -1407,9 +1449,11 @@ def handle_follow(event):
                 duration=10000
             ))
 
-            # 2. Welcome text message (emphasize it's a chatbot)
-            welcome_text = get_welcome_message(current_language)
-            messages.append(TextSendMessage(text=welcome_text))
+            # 2. Global welcome message with language Quick Reply
+            welcome_text = get_first_contact_welcome()
+            text_message = TextSendMessage(text=welcome_text)
+            text_message.quick_reply = create_language_quick_reply()  # Language selection buttons
+            messages.append(text_message)
 
             # Send both messages
             line_bot_api.reply_message(event.reply_token, messages)
@@ -1438,6 +1482,35 @@ def handle_postback(event):
         postback_data = event.postback.data
 
         print(f"🎯 Postback received from {user_id}: {postback_data}")
+
+        # Handle language selection (format: "language:thai", "language:english", etc.)
+        if postback_data.startswith("language:"):
+            language_code = postback_data.replace("language:", "").strip()
+
+            # Update customer language preference
+            update_customer_language(user_id, language_code)
+
+            # Send confirmation in the selected language
+            confirmation_messages = {
+                'thai': "✅ เปลี่ยนภาษาเป็นไทยเรียบร้อยแล้วค่ะ!\n\n💬 ตอนนี้เราสามารถคุยกันเป็นภาษาไทยได้เลยนะคะ\n\nพิมพ์ \"ดูเมนู\" เพื่อดูสายพันธุ์กัญชาทั้งหมด 😊",
+                'english': "✅ Language switched to English!\n\n💬 We can now chat in English!\n\nType \"menu\" to see all our cannabis strains 😊",
+                'chinese': "✅ 语言已切换为中文！\n\n💬 我们现在可以用中文聊天了！\n\n输入\"菜单\"查看所有大麻品种 😊",
+                'russian': "✅ Язык изменён на русский!\n\n💬 Теперь мы можем общаться на русском!\n\nНапишите \"меню\" чтобы увидеть все сорта 😊",
+                'japanese': "✅ 言語が日本語に切り替わりました！\n\n💬 日本語でチャットできます！\n\n「メニュー」と入力して全品種をご覧ください 😊",
+                'korean': "✅ 언어가 한국어로 전환되었습니다!\n\n💬 이제 한국어로 채팅할 수 있습니다!\n\n\"메뉴\"를 입력하여 모든 품종을 확인하세요 😊",
+                'french': "✅ Langue changée en français!\n\n💬 Nous pouvons maintenant discuter en français!\n\nTapez \"menu\" pour voir toutes nos variétés 😊"
+            }
+
+            confirmation_msg = confirmation_messages.get(language_code, confirmation_messages['english'])
+
+            if line_bot_api:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=confirmation_msg)
+                )
+
+            print(f"✅ Language switched to {language_code} for user {user_id}")
+            return
 
         # Parse postback data (format: "strain_info:Strain Name")
         if postback_data.startswith("strain_info:"):
