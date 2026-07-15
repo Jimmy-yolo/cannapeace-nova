@@ -114,21 +114,70 @@ def create_language_quick_reply():
 
     return QuickReply(items=quick_reply_buttons)
 
-def create_age_gate_quick_reply():
-    """Create Quick Reply buttons for age verification"""
+def create_age_gate_quick_reply(language: str = 'thai'):
+    """Create Quick Reply buttons for age verification (language-specific)"""
+    # Button labels by language
+    labels = {
+        'thai': {
+            'yes_label': '✅ ใช่ อายุ 20+',
+            'yes_display': 'ใช่ ฉันอายุ 20 ปีขึ้นไป',
+            'no_label': '❌ ไม่ อายุต่ำกว่า 20',
+            'no_display': 'ไม่ ฉันอายุต่ำกว่า 20 ปี'
+        },
+        'english': {
+            'yes_label': "✅ Yes, I'm 20+",
+            'yes_display': "Yes, I'm over 20 years old",
+            'no_label': "❌ No, I'm under 20",
+            'no_display': "No, I'm under 20 years old"
+        },
+        'chinese': {
+            'yes_label': '✅ 是的，我已满20岁',
+            'yes_display': '是的，我已满20岁',
+            'no_label': '❌ 不，我未满20岁',
+            'no_display': '不，我未满20岁'
+        },
+        'russian': {
+            'yes_label': '✅ Да, мне 20+',
+            'yes_display': 'Да, мне 20 лет или больше',
+            'no_label': '❌ Нет, мне меньше 20',
+            'no_display': 'Нет, мне меньше 20 лет'
+        },
+        'japanese': {
+            'yes_label': '✅ はい、20歳以上です',
+            'yes_display': 'はい、20歳以上です',
+            'no_label': '❌ いいえ、20歳未満です',
+            'no_display': 'いいえ、20歳未満です'
+        },
+        'korean': {
+            'yes_label': '✅ 네, 20세 이상입니다',
+            'yes_display': '네, 20세 이상입니다',
+            'no_label': '❌ 아니요, 20세 미만입니다',
+            'no_display': '아니요, 20세 미만입니다'
+        },
+        'french': {
+            'yes_label': '✅ Oui, j\'ai 20 ans+',
+            'yes_display': 'Oui, j\'ai 20 ans ou plus',
+            'no_label': '❌ Non, j\'ai moins de 20 ans',
+            'no_display': 'Non, j\'ai moins de 20 ans'
+        }
+    }
+
+    # Get labels for the specified language (default to Thai)
+    lang_labels = labels.get(language, labels['thai'])
+
     buttons = [
         QuickReplyButton(
             action=PostbackAction(
-                label="✅ Yes, I'm 20+",
+                label=lang_labels['yes_label'],
                 data="age_verified:yes",
-                display_text="Yes, I'm over 20 years old"
+                display_text=lang_labels['yes_display']
             )
         ),
         QuickReplyButton(
             action=PostbackAction(
-                label="❌ No, I'm under 20",
+                label=lang_labels['no_label'],
                 data="age_verified:no",
-                display_text="No, I'm under 20 years old"
+                display_text=lang_labels['no_display']
             )
         )
     ]
@@ -297,6 +346,70 @@ Comment puis-je vous aider aujourd'hui? 😊
 Tapez "menu" pour voir toutes nos variétés!"""
     }
     return messages.get(language, messages['thai'])
+
+def create_welcome_quick_reply(language: str = 'thai'):
+    """Create Quick Reply buttons after Nancy's welcome (language-specific)"""
+    # Button labels by language
+    labels = {
+        'thai': [
+            {'label': '🌿 ดูเมนู', 'text': 'ดูเมนู'},
+            {'label': '📦 วิธีสั่งซื้อ', 'text': 'วิธีสั่งซื้อ'},
+            {'label': 'ℹ️ เกี่ยวกับเรา', 'text': 'เกี่ยวกับ CannaPeace'},
+            {'label': '💬 ติดต่อเรา', 'text': 'ติดต่อเรา'}
+        ],
+        'english': [
+            {'label': '🌿 View Menu', 'text': 'menu'},
+            {'label': '📦 How to Order', 'text': 'how to order'},
+            {'label': 'ℹ️ About Us', 'text': 'about CannaPeace'},
+            {'label': '💬 Contact', 'text': 'contact'}
+        ],
+        'chinese': [
+            {'label': '🌿 查看菜单', 'text': '菜单'},
+            {'label': '📦 如何订购', 'text': '如何订购'},
+            {'label': 'ℹ️ 关于我们', 'text': '关于CannaPeace'},
+            {'label': '💬 联系我们', 'text': '联系我们'}
+        ],
+        'russian': [
+            {'label': '🌿 Меню', 'text': 'меню'},
+            {'label': '📦 Как заказать', 'text': 'как заказать'},
+            {'label': 'ℹ️ О нас', 'text': 'о CannaPeace'},
+            {'label': '💬 Контакты', 'text': 'контакты'}
+        ],
+        'japanese': [
+            {'label': '🌿 メニュー', 'text': 'メニュー'},
+            {'label': '📦 注文方法', 'text': '注文方法'},
+            {'label': 'ℹ️ 会社概要', 'text': 'CannaPeaceについて'},
+            {'label': '💬 お問い合わせ', 'text': 'お問い合わせ'}
+        ],
+        'korean': [
+            {'label': '🌿 메뉴 보기', 'text': '메뉴'},
+            {'label': '📦 주문 방법', 'text': '주문 방법'},
+            {'label': 'ℹ️ 회사 소개', 'text': 'CannaPeace 소개'},
+            {'label': '💬 문의하기', 'text': '문의하기'}
+        ],
+        'french': [
+            {'label': '🌿 Voir Menu', 'text': 'menu'},
+            {'label': '📦 Comment commander', 'text': 'comment commander'},
+            {'label': 'ℹ️ À propos', 'text': 'à propos de CannaPeace'},
+            {'label': '💬 Contact', 'text': 'contact'}
+        ]
+    }
+
+    # Get labels for the specified language (default to Thai)
+    lang_labels = labels.get(language, labels['thai'])
+
+    buttons = []
+    for item in lang_labels:
+        buttons.append(
+            QuickReplyButton(
+                action=MessageAction(
+                    label=item['label'],
+                    text=item['text']
+                )
+            )
+        )
+
+    return QuickReply(items=buttons)
 
 # Initialize services (with demo fallbacks)
 def get_anthropic_client():
@@ -1720,7 +1833,7 @@ def handle_postback(event):
             # NEW FLOW: Send age gate instead of confirmation
             age_gate_msg = get_age_gate_message(language_code)
             text_message = TextSendMessage(text=age_gate_msg)
-            text_message.quick_reply = create_age_gate_quick_reply()
+            text_message.quick_reply = create_age_gate_quick_reply(language_code)
 
             if line_bot_api:
                 line_bot_api.reply_message(event.reply_token, text_message)
@@ -1767,9 +1880,11 @@ def handle_postback(event):
                         duration=duration
                     ))
 
-                    # 2. Nancy's short text welcome
+                    # 2. Nancy's short text welcome with Quick Reply menu
                     nancy_text = get_nancy_welcome(language)
-                    messages.append(TextSendMessage(text=nancy_text))
+                    nancy_message = TextSendMessage(text=nancy_text)
+                    nancy_message.quick_reply = create_welcome_quick_reply(language)
+                    messages.append(nancy_message)
 
                     line_bot_api.reply_message(event.reply_token, messages)
 
