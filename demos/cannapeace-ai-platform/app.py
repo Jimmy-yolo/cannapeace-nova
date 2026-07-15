@@ -2196,35 +2196,35 @@ def handle_message(event):
         # Check which info page was requested
         if any(keyword in message_lower for keyword in about_keywords):
             # About Us page
-            about_content = get_about_us_content(language)
+            about_content = get_about_us_content(current_language)
             text_msg = TextSendMessage(text=about_content)
-            text_msg.quick_reply = create_contextual_quick_reply(language, current_page='about')
+            text_msg.quick_reply = create_contextual_quick_reply(current_language, current_page='about')
 
             if line_bot_api:
                 line_bot_api.reply_message(event.reply_token, text_msg)
-            print(f"📄 Sent About Us page ({language}) with contextual Quick Reply")
+            print(f"📄 Sent About Us page ({current_language}) with contextual Quick Reply")
             return
 
         elif any(keyword in message_lower for keyword in order_keywords):
             # How to Order page
-            order_content = get_how_to_order_content(language)
+            order_content = get_how_to_order_content(current_language)
             text_msg = TextSendMessage(text=order_content)
-            text_msg.quick_reply = create_contextual_quick_reply(language, current_page='order')
+            text_msg.quick_reply = create_contextual_quick_reply(current_language, current_page='order')
 
             if line_bot_api:
                 line_bot_api.reply_message(event.reply_token, text_msg)
-            print(f"📦 Sent How to Order page ({language}) with contextual Quick Reply")
+            print(f"📦 Sent How to Order page ({current_language}) with contextual Quick Reply")
             return
 
         elif any(keyword in message_lower for keyword in contact_keywords):
             # Contact page
-            contact_content = get_contact_info(language)
+            contact_content = get_contact_info(current_language)
             text_msg = TextSendMessage(text=contact_content)
-            text_msg.quick_reply = create_contextual_quick_reply(language, current_page='contact')
+            text_msg.quick_reply = create_contextual_quick_reply(current_language, current_page='contact')
 
             if line_bot_api:
                 line_bot_api.reply_message(event.reply_token, text_msg)
-            print(f"💬 Sent Contact page ({language}) with contextual Quick Reply")
+            print(f"💬 Sent Contact page ({current_language}) with contextual Quick Reply")
             return
 
         # Check if Claude is configured
