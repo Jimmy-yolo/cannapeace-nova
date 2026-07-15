@@ -411,6 +411,745 @@ def create_welcome_quick_reply(language: str = 'thai'):
 
     return QuickReply(items=buttons)
 
+def get_about_us_content(language: str = 'thai') -> str:
+    """Get About Us / Company information (language-specific)"""
+    content = {
+        'thai': """🌿 **เกี่ยวกับ CannaPeace**
+
+ยินดีต้อนรับสู่ CannaPeace - ร้านกัญชาคุณภาพพรีเมี่ยมในกรุงเทพฯ!
+
+**🎯 พันธกิจของเรา:**
+เราเชื่อว่ากัญชาควรเข้าถึงได้ง่าย ปลอดภัย และมีคุณภาพสูง เราให้ความรู้ แนะนำ และช่วยคุณเลือกสายพันธุ์ที่เหมาะสมที่สุด
+
+**✨ ทำไมต้อง CannaPeace:**
+• 🔬 กัญชาคุณภาพสูง ตรวจสอบในห้องแล็บ
+• 📚 ข้อมูลครบถ้วน (THC/CBD, terpenes, ผลกระทบ)
+• 👧 Nancy - ผู้เชี่ยวชาญเภสัชศาสตร์จาก จุฬาฯ
+• 🚚 จัดส่งเร็วทั่วกรุงเทพฯ
+• 💬 แชทบอท AI 24/7 + ทีมผู้เชี่ยวชาญ
+
+**📍 ที่อยู่:**
+กรุงเทพมหานคร ประเทศไทย
+
+**⚖️ การปฏิบัติตามกฎหมาย:**
+CannaPeace ดำเนินงานอย่างถูกต้องตามกฎหมายไทย เราขายเฉพาะผู้ที่อายุ 20 ปีขึ้นไป และส่งเสริมการใช้อย่างรับผิดชอบ
+
+เรายินดีให้บริการคุณ! 🌿""",
+
+        'english': """🌿 **About CannaPeace**
+
+Welcome to CannaPeace - Bangkok's premium cannabis dispensary!
+
+**🎯 Our Mission:**
+We believe cannabis should be accessible, safe, and high-quality. We educate, guide, and help you choose the perfect strain for your needs.
+
+**✨ Why CannaPeace:**
+• 🔬 Premium quality, lab-tested cannabis
+• 📚 Comprehensive info (THC/CBD, terpenes, effects)
+• 👧 Nancy - Pharmaceutical Sciences expert from Chulalongkorn University
+• 🚚 Fast delivery across Bangkok
+• 💬 24/7 AI chatbot + expert team
+
+**📍 Location:**
+Bangkok, Thailand
+
+**⚖️ Legal Compliance:**
+CannaPeace operates legally under Thai law. We only serve customers aged 20+ and promote responsible use.
+
+We're here to serve you! 🌿""",
+
+        'chinese': """🌿 **关于CannaPeace**
+
+欢迎来到CannaPeace - 曼谷优质大麻专卖店！
+
+**🎯 我们的使命：**
+我们相信大麻应该易于获取、安全且高品质。我们提供教育、指导，帮助您选择最适合您需求的品种。
+
+**✨ 为什么选择CannaPeace：**
+• 🔬 优质大麻，实验室检测
+• 📚 全面信息（THC/CBD、萜烯、效果）
+• 👧 Nancy - 朱拉隆功大学药学专家
+• 🚚 曼谷快速配送
+• 💬 24/7 AI聊天机器人 + 专家团队
+
+**📍 地址：**
+泰国曼谷
+
+**⚖️ 法律合规：**
+CannaPeace依照泰国法律合法经营。我们仅向20岁以上的客户提供服务，并提倡负责任使用。
+
+我们竭诚为您服务！🌿""",
+
+        'russian': """🌿 **О CannaPeace**
+
+Добро пожаловать в CannaPeace - премиальный магазин каннабиса в Бангкоке!
+
+**🎯 Наша миссия:**
+Мы верим, что каннабис должен быть доступным, безопасным и качественным. Мы обучаем, консультируем и помогаем выбрать идеальный сорт.
+
+**✨ Почему CannaPeace:**
+• 🔬 Премиум качество, лабораторные тесты
+• 📚 Полная информация (THC/CBD, терпены, эффекты)
+• 👧 Nancy - эксперт фармацевтики из Университета Чулалонгкорн
+• 🚚 Быстрая доставка по Бангкоку
+• 💬 AI чат-бот 24/7 + команда экспертов
+
+**📍 Адрес:**
+Бангкок, Таиланд
+
+**⚖️ Соответствие закону:**
+CannaPeace работает легально по законам Таиланда. Мы обслуживаем только клиентов 20+ и продвигаем ответственное использование.
+
+Мы рады вам помочь! 🌿""",
+
+        'japanese': """🌿 **CannaPeaceについて**
+
+バンコクのプレミアム大麻専門店、CannaPeaceへようこそ！
+
+**🎯 私たちの使命：**
+大麻はアクセスしやすく、安全で、高品質であるべきだと信じています。教育、ガイド、そしてあなたのニーズに最適な品種選びをサポートします。
+
+**✨ CannaPeaceを選ぶ理由：**
+• 🔬 プレミアム品質、研究室でテスト済み
+• 📚 包括的な情報（THC/CBD、テルペン、効果）
+• 👧 Nancy - チュラロンコン大学薬学の専門家
+• 🚚 バンコク全域への迅速配送
+• 💬 24/7 AIチャットボット + 専門家チーム
+
+**📍 所在地：**
+タイ、バンコク
+
+**⚖️ 法令遵守：**
+CannaPeaceはタイの法律に従って合法的に運営されています。20歳以上のお客様のみにサービスを提供し、責任ある使用を推進しています。
+
+お役に立てることを楽しみにしております！🌿""",
+
+        'korean': """🌿 **CannaPeace 소개**
+
+방콕의 프리미엄 대마초 전문점 CannaPeace에 오신 것을 환영합니다!
+
+**🎯 우리의 사명：**
+대마초는 접근하기 쉽고, 안전하며, 고품질이어야 한다고 믿습니다. 교육, 안내, 그리고 귀하의 필요에 가장 적합한 품종 선택을 도와드립니다.
+
+**✨ CannaPeace를 선택하는 이유：**
+• 🔬 프리미엄 품질, 실험실 검사 완료
+• 📚 포괄적인 정보 (THC/CBD, 테르펜, 효과)
+• 👧 Nancy - 출라롱콘 대학교 약학 전문가
+• 🚚 방콕 전역 빠른 배송
+• 💬 24/7 AI 챗봇 + 전문가 팀
+
+**📍 위치：**
+태국 방콕
+
+**⚖️ 법적 준수：**
+CannaPeace는 태국 법률에 따라 합법적으로 운영됩니다. 20세 이상의 고객에게만 서비스를 제공하며 책임있는 사용을 장려합니다.
+
+최선을 다해 모시겠습니다! 🌿""",
+
+        'french': """🌿 **À propos de CannaPeace**
+
+Bienvenue chez CannaPeace - le dispensaire de cannabis premium de Bangkok!
+
+**🎯 Notre mission:**
+Nous croyons que le cannabis devrait être accessible, sûr et de haute qualité. Nous éduquons, guidons et aidons à choisir la variété parfaite.
+
+**✨ Pourquoi CannaPeace:**
+• 🔬 Qualité premium, testé en laboratoire
+• 📚 Informations complètes (THC/CBD, terpènes, effets)
+• 👧 Nancy - experte en sciences pharmaceutiques de l'Université Chulalongkorn
+• 🚚 Livraison rapide à Bangkok
+• 💬 Chatbot IA 24/7 + équipe d'experts
+
+**📍 Localisation:**
+Bangkok, Thaïlande
+
+**⚖️ Conformité légale:**
+CannaPeace opère légalement selon la loi thaïlandaise. Nous servons uniquement les clients de 20 ans et plus et promouvons une utilisation responsable.
+
+Nous sommes là pour vous servir! 🌿"""
+    }
+    return content.get(language, content['thai'])
+
+def get_how_to_order_content(language: str = 'thai') -> str:
+    """Get How to Order instructions (language-specific)"""
+    content = {
+        'thai': """📦 **วิธีสั่งซื้อ CannaPeace**
+
+สั่งซื้อง่ายๆ ได้ 3 ขั้นตอน!
+
+**ขั้นตอนที่ 1: เลือกสายพันธุ์** 🌿
+• พิมพ์ "ดูเมนู" หรือคลิก Quick Reply
+• ดูรายการสายพันธุ์ทั้งหมด
+• คลิกชื่อสายพันธุ์เพื่อดูรายละเอียด
+• Nancy จะแนะนำตามความต้องการของคุณ
+
+**ขั้นตอนที่ 2: บอกรายละเอียด** 📝
+บอก Nancy:
+• สายพันธุ์ที่ต้องการ (เช่น "Apple Banana")
+• น้ำหนัก (1g, 3.5g, 7g, 14g, 28g)
+• ที่อยู่จัดส่ง
+• เบอร์โทรศัพท์
+
+**ตัวอย่าง:**
+"สั่ง Apple Banana 3.5g ส่งที่ Sukhumvit Soi 11 เบอร์ 088-xxx-xxxx"
+
+**ขั้นตอนที่ 3: ยืนยัน & รับของ** ✅
+• Nancy จะสรุปรายการสั่งซื้อ + ราคารวม
+• ยืนยันคำสั่งซื้อ
+• รอรับของ 1-3 ชั่วโมง (กรุงเทพฯ)
+• ชำระเงินปลายทาง (เงินสด/PromptPay)
+
+**💡 เคล็ดลับ:**
+• ไม่แน่ใจ? ถาม Nancy! "แนะนำสายพันธุ์สำหรับ..."
+• ลองครั้งแรก? เริ่มที่ 1-3.5g
+• ต้องการผลกระทบเฉพาะ? บอก Nancy (นอนหลับ/ผ่อนคลาย/ความคิดสร้างสรรค์)
+
+**📞 ต้องการความช่วยเหลือ?**
+พิมพ์ "ติดต่อเรา" หรือคลิก Quick Reply เพื่อพูดคุยกับทีมผู้เชี่ยวชาญ
+
+พร้อมสั่งซื้อแล้วหรือยัง? 🛒""",
+
+        'english': """📦 **How to Order from CannaPeace**
+
+Order in 3 easy steps!
+
+**Step 1: Choose Your Strain** 🌿
+• Type "menu" or tap Quick Reply
+• Browse all available strains
+• Click strain name for details
+• Nancy will recommend based on your needs
+
+**Step 2: Provide Details** 📝
+Tell Nancy:
+• Strain you want (e.g., "Apple Banana")
+• Weight (1g, 3.5g, 7g, 14g, 28g)
+• Delivery address
+• Phone number
+
+**Example:**
+"Order Apple Banana 3.5g to Sukhumvit Soi 11, phone 088-xxx-xxxx"
+
+**Step 3: Confirm & Receive** ✅
+• Nancy summarizes order + total price
+• Confirm your order
+• Receive in 1-3 hours (Bangkok)
+• Pay on delivery (Cash/PromptPay)
+
+**💡 Tips:**
+• Not sure? Ask Nancy! "Recommend strain for..."
+• First time? Start with 1-3.5g
+• Want specific effects? Tell Nancy (sleep/relax/creativity)
+
+**📞 Need Help?**
+Type "contact" or tap Quick Reply to talk with our expert team
+
+Ready to order? 🛒""",
+
+        'chinese': """📦 **如何从CannaPeace订购**
+
+三步轻松订购！
+
+**步骤1：选择品种** 🌿
+• 输入"菜单"或点击快速回复
+• 浏览所有可用品种
+• 点击品种名称查看详情
+• Nancy会根据您的需求推荐
+
+**步骤2：提供详细信息** 📝
+告诉Nancy：
+• 您想要的品种（例如"Apple Banana"）
+• 重量（1g、3.5g、7g、14g、28g）
+• 送货地址
+• 电话号码
+
+**示例：**
+"订购Apple Banana 3.5g到Sukhumvit Soi 11，电话088-xxx-xxxx"
+
+**步骤3：确认并接收** ✅
+• Nancy总结订单 + 总价
+• 确认您的订单
+• 1-3小时内收到（曼谷）
+• 货到付款（现金/PromptPay）
+
+**💡 提示：**
+• 不确定？问Nancy！"推荐用于...的品种"
+• 第一次？从1-3.5g开始
+• 想要特定效果？告诉Nancy（睡眠/放松/创造力）
+
+**📞 需要帮助？**
+输入"联系我们"或点击快速回复与专家团队交谈
+
+准备好订购了吗？🛒""",
+
+        'russian': """📦 **Как заказать в CannaPeace**
+
+Заказ в 3 простых шага!
+
+**Шаг 1: Выберите сорт** 🌿
+• Напишите "меню" или нажмите быстрый ответ
+• Просмотрите все доступные сорта
+• Нажмите на название для деталей
+• Nancy порекомендует на основе ваших потребностей
+
+**Шаг 2: Предоставьте детали** 📝
+Скажите Nancy:
+• Желаемый сорт (например, "Apple Banana")
+• Вес (1g, 3.5g, 7g, 14g, 28g)
+• Адрес доставки
+• Номер телефона
+
+**Пример:**
+"Заказать Apple Banana 3.5g на Sukhumvit Soi 11, телефон 088-xxx-xxxx"
+
+**Шаг 3: Подтвердите и получите** ✅
+• Nancy суммирует заказ + общую цену
+• Подтвердите заказ
+• Получите за 1-3 часа (Бангкок)
+• Оплата при получении (наличные/PromptPay)
+
+**💡 Советы:**
+• Не уверены? Спросите Nancy! "Порекомендуй сорт для..."
+• Первый раз? Начните с 1-3.5g
+• Нужны определенные эффекты? Скажите Nancy (сон/релакс/креативность)
+
+**📞 Нужна помощь?**
+Напишите "контакты" или нажмите быстрый ответ для связи с экспертами
+
+Готовы заказать? 🛒""",
+
+        'japanese': """📦 **CannaPeaceでの注文方法**
+
+3つの簡単なステップで注文！
+
+**ステップ1：品種を選ぶ** 🌿
+• 「メニュー」と入力またはクイックリプライをタップ
+• 利用可能な全品種を閲覧
+• 品種名をクリックして詳細を表示
+• Nancyがニーズに基づいて推奨
+
+**ステップ2：詳細を提供** 📝
+Nancyに伝える：
+• 希望の品種（例：「Apple Banana」）
+• 重量（1g、3.5g、7g、14g、28g）
+• 配送先住所
+• 電話番号
+
+**例：**
+「Apple Banana 3.5gをSukhumvit Soi 11に注文、電話088-xxx-xxxx」
+
+**ステップ3：確認 & 受取** ✅
+• Nancyが注文 + 合計金額を要約
+• 注文を確認
+• 1-3時間で受取（バンコク）
+• 着払い（現金/PromptPay）
+
+**💡 ヒント：**
+• 迷ったら？Nancyに聞いて！「...用の品種をおすすめして」
+• 初めて？1-3.5gから始めましょう
+• 特定の効果が欲しい？Nancyに伝えて（睡眠/リラックス/創造性）
+
+**📞 サポートが必要？**
+「お問い合わせ」と入力またはクイックリプライで専門家チームと話せます
+
+注文の準備はできましたか？🛒""",
+
+        'korean': """📦 **CannaPeace 주문 방법**
+
+3단계로 간편하게 주문!
+
+**1단계: 품종 선택** 🌿
+• "메뉴"를 입력하거나 빠른 답장 탭
+• 모든 사용 가능한 품종 찾아보기
+• 품종 이름 클릭하여 세부 정보 보기
+• Nancy가 귀하의 필요에 따라 추천
+
+**2단계: 세부 정보 제공** 📝
+Nancy에게 알려주세요:
+• 원하는 품종 (예: "Apple Banana")
+• 무게 (1g, 3.5g, 7g, 14g, 28g)
+• 배송 주소
+• 전화번호
+
+**예시:**
+"Apple Banana 3.5g를 Sukhumvit Soi 11로 주문, 전화 088-xxx-xxxx"
+
+**3단계: 확인 및 수령** ✅
+• Nancy가 주문 + 총 가격 요약
+• 주문 확인
+• 1-3시간 내 수령 (방콕)
+• 착불 (현금/PromptPay)
+
+**💡 팁:**
+• 확실하지 않으세요? Nancy에게 물어보세요! "...용 품종 추천"
+• 처음이세요? 1-3.5g로 시작
+• 특정 효과를 원하세요? Nancy에게 말하세요 (수면/휴식/창의성)
+
+**📞 도움이 필요하신가요?**
+"문의하기"를 입력하거나 빠른 답장을 탭하여 전문가 팀과 대화
+
+주문할 준비가 되셨나요? 🛒""",
+
+        'french': """📦 **Comment commander chez CannaPeace**
+
+Commandez en 3 étapes faciles!
+
+**Étape 1: Choisissez votre variété** 🌿
+• Tapez "menu" ou appuyez sur réponse rapide
+• Parcourez toutes les variétés disponibles
+• Cliquez sur le nom pour les détails
+• Nancy recommandera selon vos besoins
+
+**Étape 2: Fournissez les détails** 📝
+Dites à Nancy:
+• Variété souhaitée (ex: "Apple Banana")
+• Poids (1g, 3.5g, 7g, 14g, 28g)
+• Adresse de livraison
+• Numéro de téléphone
+
+**Exemple:**
+"Commander Apple Banana 3.5g à Sukhumvit Soi 11, tél 088-xxx-xxxx"
+
+**Étape 3: Confirmez et recevez** ✅
+• Nancy résume la commande + prix total
+• Confirmez votre commande
+• Recevez en 1-3 heures (Bangkok)
+• Paiement à la livraison (Espèces/PromptPay)
+
+**💡 Conseils:**
+• Pas sûr? Demandez à Nancy! "Recommander variété pour..."
+• Première fois? Commencez avec 1-3.5g
+• Effets spécifiques? Dites à Nancy (sommeil/détente/créativité)
+
+**📞 Besoin d'aide?**
+Tapez "contact" ou appuyez sur réponse rapide pour parler à notre équipe d'experts
+
+Prêt à commander? 🛒"""
+    }
+    return content.get(language, content['thai'])
+
+def get_contact_info(language: str = 'thai') -> str:
+    """Get Contact information (language-specific)"""
+    content = {
+        'thai': """💬 **ติดต่อ CannaPeace**
+
+เรายินดีให้บริการคุณ! ติดต่อได้หลายช่องทาง:
+
+**🤖 Nancy - AI Chatbot**
+• พร้อมให้บริการ 24/7
+• ตอบคำถามทั่วไป, แนะนำสายพันธุ์, รับคำสั่งซื้อ
+• คุณกำลังคุยกับ Nancy อยู่ตอนนี้!
+
+**👥 ทีมผู้เชี่ยวชาญ**
+• Peter, Jay, James
+• พร้อมให้คำปรึกษาเฉพาะทาง
+• ช่วงเวลาทำการ: 9:00-21:00
+
+**📱 LINE Official Account**
+• @cannapeace
+• คุณกำลังใช้งานอยู่ตอนนี้!
+
+**⏰ เวลาทำการ**
+• AI Chatbot: 24 ชั่วโมง
+• ทีมผู้เชี่ยวชาญ: 9:00-21:00 (ทุกวัน)
+• จัดส่ง: 10:00-22:00 (กรุงเทพฯ)
+
+**🚚 พื้นที่จัดส่ง**
+กรุงเทพมหานครและปริมณฑล
+
+**❓ คำถามที่พบบ่อย:**
+• "สายพันธุ์ไหนเหมาะกับ...?"
+• "ส่งได้ถึงไหม...?"
+• "ราคาเท่าไหร่?"
+• "จัดส่งนานแค่ไหน?"
+
+ถามได้เลย Nancy พร้อมช่วย! 😊
+
+หรือต้องการคุยกับทีม? บอกได้เลยค่ะ!""",
+
+        'english': """💬 **Contact CannaPeace**
+
+We're here to help! Contact us through multiple channels:
+
+**🤖 Nancy - AI Chatbot**
+• Available 24/7
+• Answers questions, recommends strains, takes orders
+• You're chatting with Nancy right now!
+
+**👥 Expert Team**
+• Peter, Jay, James
+• Available for specialized consultation
+• Hours: 9:00-21:00
+
+**📱 LINE Official Account**
+• @cannapeace
+• You're using it now!
+
+**⏰ Operating Hours**
+• AI Chatbot: 24 hours
+• Expert Team: 9:00-21:00 (Daily)
+• Delivery: 10:00-22:00 (Bangkok)
+
+**🚚 Delivery Area**
+Bangkok and surrounding areas
+
+**❓ Common Questions:**
+• "Which strain is good for...?"
+• "Do you deliver to...?"
+• "How much does it cost?"
+• "How long is delivery?"
+
+Ask away! Nancy is ready to help! 😊
+
+Or want to talk to the team? Just let me know!""",
+
+        'chinese': """💬 **联系CannaPeace**
+
+我们随时为您服务！通过多种渠道联系我们：
+
+**🤖 Nancy - AI聊天机器人**
+• 24/7全天候服务
+• 回答问题、推荐品种、接受订单
+• 您现在正在与Nancy聊天！
+
+**👥 专家团队**
+• Peter、Jay、James
+• 提供专业咨询
+• 工作时间：9:00-21:00
+
+**📱 LINE官方账号**
+• @cannapeace
+• 您现在正在使用！
+
+**⏰ 营业时间**
+• AI聊天机器人：24小时
+• 专家团队：9:00-21:00（每天）
+• 配送：10:00-22:00（曼谷）
+
+**🚚 配送区域**
+曼谷及周边地区
+
+**❓ 常见问题：**
+• "哪个品种适合...？"
+• "能送到...吗？"
+• "多少钱？"
+• "配送需要多长时间？"
+
+尽管问！Nancy随时准备帮助！😊
+
+或者想与团队交谈？告诉我！""",
+
+        'russian': """💬 **Связаться с CannaPeace**
+
+Мы здесь, чтобы помочь! Свяжитесь с нами:
+
+**🤖 Nancy - AI чат-бот**
+• Доступна 24/7
+• Отвечает на вопросы, рекомендует сорта, принимает заказы
+• Вы сейчас общаетесь с Nancy!
+
+**👥 Команда экспертов**
+• Peter, Jay, James
+• Доступны для специализированных консультаций
+• Часы работы: 9:00-21:00
+
+**📱 LINE официальный аккаунт**
+• @cannapeace
+• Вы используете его сейчас!
+
+**⏰ Часы работы**
+• AI чат-бот: 24 часа
+• Команда экспертов: 9:00-21:00 (ежедневно)
+• Доставка: 10:00-22:00 (Бангкок)
+
+**🚚 Зона доставки**
+Бангкок и окрестности
+
+**❓ Частые вопросы:**
+• "Какой сорт подходит для...?"
+• "Вы доставляете в...?"
+• "Сколько это стоит?"
+• "Как долго доставка?"
+
+Спрашивайте! Nancy готова помочь! 😊
+
+Или хотите поговорить с командой? Просто скажите!""",
+
+        'japanese': """💬 **CannaPeaceへのお問い合わせ**
+
+お気軽にお問い合わせください！複数のチャネルで対応：
+
+**🤖 Nancy - AIチャットボット**
+• 24時間365日対応
+• 質問への回答、品種の推奨、注文受付
+• 今Nancyとチャットしています！
+
+**👥 専門家チーム**
+• Peter、Jay、James
+• 専門的なコンサルテーション
+• 営業時間：9:00-21:00
+
+**📱 LINE公式アカウント**
+• @cannapeace
+• 現在使用中！
+
+**⏰ 営業時間**
+• AIチャットボット：24時間
+• 専門家チーム：9:00-21:00（毎日）
+• 配送：10:00-22:00（バンコク）
+
+**🚚 配送エリア**
+バンコクおよび周辺地域
+
+**❓ よくある質問：**
+• 「どの品種が...に良いですか？」
+• 「...に配送できますか？」
+• 「いくらですか？」
+• 「配送にどれくらいかかりますか？」
+
+何でも聞いてください！Nancyがお手伝いします！😊
+
+それともチームと話したいですか？お知らせください！""",
+
+        'korean': """💬 **CannaPeace 연락처**
+
+도움을 드리겠습니다! 여러 채널로 연락하실 수 있습니다:
+
+**🤖 Nancy - AI 챗봇**
+• 24/7 이용 가능
+• 질문 답변, 품종 추천, 주문 접수
+• 지금 Nancy와 채팅 중입니다!
+
+**👥 전문가 팀**
+• Peter, Jay, James
+• 전문 상담 가능
+• 운영 시간: 9:00-21:00
+
+**📱 LINE 공식 계정**
+• @cannapeace
+• 현재 사용 중!
+
+**⏰ 운영 시간**
+• AI 챗봇: 24시간
+• 전문가 팀: 9:00-21:00 (매일)
+• 배송: 10:00-22:00 (방콕)
+
+**🚚 배송 지역**
+방콕 및 주변 지역
+
+**❓ 자주 묻는 질문:**
+• "어떤 품종이 ...에 좋나요?"
+• "...로 배송 가능한가요?"
+• "가격은 얼마인가요?"
+• "배송은 얼마나 걸리나요?"
+
+무엇이든 물어보세요! Nancy가 도와드릴 준비가 되어 있습니다! 😊
+
+아니면 팀과 이야기하고 싶으신가요? 말씀해 주세요!""",
+
+        'french': """💬 **Contacter CannaPeace**
+
+Nous sommes là pour vous aider! Contactez-nous:
+
+**🤖 Nancy - Chatbot IA**
+• Disponible 24/7
+• Répond aux questions, recommande variétés, prend commandes
+• Vous chattez avec Nancy maintenant!
+
+**👥 Équipe d'experts**
+• Peter, Jay, James
+• Disponibles pour consultation spécialisée
+• Horaires: 9:00-21:00
+
+**📱 Compte LINE officiel**
+• @cannapeace
+• Vous l'utilisez maintenant!
+
+**⏰ Heures d'ouverture**
+• Chatbot IA: 24 heures
+• Équipe d'experts: 9:00-21:00 (quotidien)
+• Livraison: 10:00-22:00 (Bangkok)
+
+**🚚 Zone de livraison**
+Bangkok et environs
+
+**❓ Questions fréquentes:**
+• "Quelle variété est bonne pour...?"
+• "Livrez-vous à...?"
+• "Combien ça coûte?"
+• "Combien de temps pour la livraison?"
+
+Demandez! Nancy est prête à aider! 😊
+
+Ou voulez-vous parler à l'équipe? Faites-le moi savoir!"""
+    }
+    return content.get(language, content['thai'])
+
+def create_contextual_quick_reply(language: str = 'thai', current_page: str = 'menu'):
+    """Create contextual Quick Reply buttons (shows all options EXCEPT current page)"""
+    # All possible options
+    all_options = {
+        'thai': {
+            'menu': {'label': '🌿 ดูเมนู', 'text': 'ดูเมนู'},
+            'order': {'label': '📦 วิธีสั่งซื้อ', 'text': 'วิธีสั่งซื้อ'},
+            'about': {'label': 'ℹ️ เกี่ยวกับเรา', 'text': 'เกี่ยวกับ CannaPeace'},
+            'contact': {'label': '💬 ติดต่อเรา', 'text': 'ติดต่อเรา'}
+        },
+        'english': {
+            'menu': {'label': '🌿 View Menu', 'text': 'menu'},
+            'order': {'label': '📦 How to Order', 'text': 'how to order'},
+            'about': {'label': 'ℹ️ About Us', 'text': 'about CannaPeace'},
+            'contact': {'label': '💬 Contact', 'text': 'contact'}
+        },
+        'chinese': {
+            'menu': {'label': '🌿 查看菜单', 'text': '菜单'},
+            'order': {'label': '📦 如何订购', 'text': '如何订购'},
+            'about': {'label': 'ℹ️ 关于我们', 'text': '关于CannaPeace'},
+            'contact': {'label': '💬 联系我们', 'text': '联系我们'}
+        },
+        'russian': {
+            'menu': {'label': '🌿 Меню', 'text': 'меню'},
+            'order': {'label': '📦 Как заказать', 'text': 'как заказать'},
+            'about': {'label': 'ℹ️ О нас', 'text': 'о CannaPeace'},
+            'contact': {'label': '💬 Контакты', 'text': 'контакты'}
+        },
+        'japanese': {
+            'menu': {'label': '🌿 メニュー', 'text': 'メニュー'},
+            'order': {'label': '📦 注文方法', 'text': '注文方法'},
+            'about': {'label': 'ℹ️ 会社概要', 'text': 'CannaPeaceについて'},
+            'contact': {'label': '💬 お問い合わせ', 'text': 'お問い合わせ'}
+        },
+        'korean': {
+            'menu': {'label': '🌿 메뉴 보기', 'text': '메뉴'},
+            'order': {'label': '📦 주문 방법', 'text': '주문 방법'},
+            'about': {'label': 'ℹ️ 회사 소개', 'text': 'CannaPeace 소개'},
+            'contact': {'label': '💬 문의하기', 'text': '문의하기'}
+        },
+        'french': {
+            'menu': {'label': '🌿 Voir Menu', 'text': 'menu'},
+            'order': {'label': '📦 Comment commander', 'text': 'comment commander'},
+            'about': {'label': 'ℹ️ À propos', 'text': 'à propos de CannaPeace'},
+            'contact': {'label': '💬 Contact', 'text': 'contact'}
+        }
+    }
+
+    # Get options for this language
+    lang_options = all_options.get(language, all_options['thai'])
+
+    # Build buttons, excluding the current page
+    buttons = []
+    for key, item in lang_options.items():
+        if key != current_page:  # Don't show button for current page
+            buttons.append(
+                QuickReplyButton(
+                    action=MessageAction(
+                        label=item['label'],
+                        text=item['text']
+                    )
+                )
+            )
+
+    return QuickReply(items=buttons)
+
 # Initialize services (with demo fallbacks)
 def get_anthropic_client():
     if ANTHROPIC_API_KEY:
@@ -1438,6 +2177,55 @@ def handle_message(event):
                 line_bot_api.show_loading_animation(event.source.user_id)
             except Exception as typing_error:
                 print(f"⚠️ Could not show typing indicator: {typing_error}")
+
+        # Check for info page requests (About Us, How to Order, Contact) - respond directly without Claude
+        message_lower = message_text.lower()
+
+        # About Us keywords (all 7 languages)
+        about_keywords = ['about', 'เกี่ยวกับ', '关于', 'о нас', 'について', '소개', 'à propos',
+                         'who are you', 'company', 'about us', 'about cannapeace']
+
+        # How to Order keywords (all 7 languages)
+        order_keywords = ['how to order', 'วิธีสั่งซื้อ', '如何订购', 'как заказать', '注文方法', '주문 방법', 'comment commander',
+                         'how do i order', 'order process', 'วิธีสั่ง', 'สั่งซื้อยังไง']
+
+        # Contact keywords (all 7 languages)
+        contact_keywords = ['contact', 'ติดต่อ', '联系', 'контакт', 'お問い合わせ', '문의', 'contacter',
+                           'reach you', 'talk to team', 'human', 'คุยกับคน']
+
+        # Check which info page was requested
+        if any(keyword in message_lower for keyword in about_keywords):
+            # About Us page
+            about_content = get_about_us_content(language)
+            text_msg = TextSendMessage(text=about_content)
+            text_msg.quick_reply = create_contextual_quick_reply(language, current_page='about')
+
+            if line_bot_api:
+                line_bot_api.reply_message(event.reply_token, text_msg)
+            print(f"📄 Sent About Us page ({language}) with contextual Quick Reply")
+            return
+
+        elif any(keyword in message_lower for keyword in order_keywords):
+            # How to Order page
+            order_content = get_how_to_order_content(language)
+            text_msg = TextSendMessage(text=order_content)
+            text_msg.quick_reply = create_contextual_quick_reply(language, current_page='order')
+
+            if line_bot_api:
+                line_bot_api.reply_message(event.reply_token, text_msg)
+            print(f"📦 Sent How to Order page ({language}) with contextual Quick Reply")
+            return
+
+        elif any(keyword in message_lower for keyword in contact_keywords):
+            # Contact page
+            contact_content = get_contact_info(language)
+            text_msg = TextSendMessage(text=contact_content)
+            text_msg.quick_reply = create_contextual_quick_reply(language, current_page='contact')
+
+            if line_bot_api:
+                line_bot_api.reply_message(event.reply_token, text_msg)
+            print(f"💬 Sent Contact page ({language}) with contextual Quick Reply")
+            return
 
         # Check if Claude is configured
         if not anthropic_client:
