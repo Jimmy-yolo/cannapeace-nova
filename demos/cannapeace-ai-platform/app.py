@@ -266,39 +266,39 @@ Selon la loi thaïlandaise, le cannabis ne peut être vendu qu'aux personnes âg
     return messages.get(language, messages['thai'])
 
 def get_nancy_welcome(language: str = 'thai') -> str:
-    """Get Nancy's short welcome message (accompanies voice greeting)"""
+    """Get Nancy's short, natural welcome message (accompanies voice greeting)"""
     messages = {
-        'thai': """ฉันชื่อ Nancy ค่ะ - เพิ่งจบ Pharmaceutical Sciences จาก จุฬาฯ มา! 🎓
+        'thai': """สวัสดีค่ะ! ฉันชื่อ Nancy 🌿
 
 มีอะไรให้ช่วยไหมคะวันนี้? 😊
-พิมพ์ "ดูเมนู" เพื่อดูสายพันธุ์กัญชาทั้งหมด!""",
+พิมพ์ "ดูเมนู" ถ้าอยากดูสายพันธุ์กัญชาทั้งหมดค่ะ""",
 
-        'english': """I'm Nancy - just graduated from Chula with a degree in Pharmaceutical Sciences! 🎓
+        'english': """Hey! I'm Nancy 🌿
 
 What can I help you with today? 😊
-Type "menu" to see all our strains!""",
+Type "menu" to see all our cannabis strains!""",
 
-        'chinese': """我是Nancy - 刚从朱拉隆功大学药学系毕业！🎓
+        'chinese': """你好！我是Nancy 🌿
 
 今天有什么可以帮您的吗？😊
-输入"菜单"查看所有品种！""",
+输入"菜单"查看所有大麻品种！""",
 
-        'russian': """Я Nancy - только что окончила Чулалонгкорн по специальности Фармацевтические науки! 🎓
+        'russian': """Привет! Я Nancy 🌿
 
 Чем могу помочь сегодня? 😊
 Напишите "меню" чтобы увидеть все сорта!""",
 
-        'japanese': """私はNancyです - チュラロンコン大学で薬学を卒業したばかりです！🎓
+        'japanese': """こんにちは！私はNancyです 🌿
 
 今日は何かお手伝いできますか？😊
 「メニュー」と入力して全品種をご覧ください！""",
 
-        'korean': """저는 Nancy입니다 - 막 Chula에서 약학 학위를 받고 졸업했어요! 🎓
+        'korean': """안녕하세요! 저는 Nancy입니다 🌿
 
 오늘 무엇을 도와드릴까요? 😊
 "메뉴"를 입력하여 모든 품종을 확인하세요!""",
 
-        'french': """Je suis Nancy - je viens de terminer mes études en sciences pharmaceutiques à Chula! 🎓
+        'french': """Salut! Je suis Nancy 🌿
 
 Comment puis-je vous aider aujourd'hui? 😊
 Tapez "menu" pour voir toutes nos variétés!"""
@@ -779,6 +779,41 @@ def update_customer_language(user_id: str, language: str):
 
     except Exception as e:
         print(f"Error updating language preference: {e}")
+
+def update_customer_age_verified(user_id: str, verified: bool):
+    """
+    Update customer's age verification status in profile
+    Column N (index 13) - Age_Verified
+    """
+    if not sheets_service or GOOGLE_SHEET_ID == "DEMO_SHEET":
+        return
+
+    try:
+        profile = get_customer_profile(user_id)
+        if profile:
+            # Update age_verified field (column N - index 13)
+            result = sheets_service.spreadsheets().values().get(
+                spreadsheetId=GOOGLE_SHEET_ID,
+                range='Customers!A:A'
+            ).execute()
+            rows = result.get('values', [])
+
+            for i, row in enumerate(rows):
+                if row and row[0] == user_id:
+                    row_index = i + 1
+                    # Update age_verified column
+                    age_status = "Yes" if verified else "No"
+                    sheets_service.spreadsheets().values().update(
+                        spreadsheetId=GOOGLE_SHEET_ID,
+                        range=f'Customers!N{row_index}',
+                        valueInputOption='USER_ENTERED',
+                        body={'values': [[age_status]]}
+                    ).execute()
+                    print(f"✅ Updated age_verified to {age_status} for user {user_id}")
+                    break
+
+    except Exception as e:
+        print(f"Error updating age verification: {e}")
 
 def get_first_contact_welcome() -> str:
     """
@@ -1287,6 +1322,26 @@ def handle_message(event):
                 line_bot_api.reply_message(event.reply_token, messages)
             return
 
+        # CHECK AGE VERIFICATION (Block underage users)
+        age_verified = profile.get('age_verified', None) if profile else None
+
+        if age_verified == "No":  # Explicitly marked as underage
+            # Block from using the bot
+            blocked_messages = {
+                'thai': "ขออภัยค่ะ 🌿\n\nตามกฎหมายไทย เราไม่สามารถให้บริการผู้ที่อายุต่ำกว่า 20 ปีค่ะ\n\nหวังว่าจะได้พบคุณอีกครั้งเมื่อคุณมีอายุครบ 20 ปีนะคะ!",
+                'english': "Sorry! 🌿\n\nUnder Thai law, we cannot serve customers under 20 years old.\n\nHope to see you when you turn 20!",
+                'chinese': "抱歉！🌿\n\n根据泰国法律，我们不能为20岁以下的客户提供服务。\n\n希望您20岁时再见！",
+                'russian': "Извините! 🌿\n\nСогласно законам Таиланда, мы не можем обслуживать клиентов младше 20 лет.\n\nНадеемся увидеть вас в 20 лет!",
+                'japanese': "申し訳ございません！🌿\n\nタイの法律により、20歳未満のお客様にはサービスを提供できません。\n\n20歳になったらまたお会いしましょう！",
+                'korean': "죄송합니다! 🌿\n\n태국 법에 따라 20세 미만의 고객에게 서비스를 제공할 수 없습니다.\n\n20세가 되면 다시 만나요!",
+                'french': "Désolé! 🌿\n\nSelon la loi thaïlandaise, nous ne pouvons pas servir les clients de moins de 20 ans.\n\nJ'espère vous voir à 20 ans!"
+            }
+            blocked_msg = blocked_messages.get(current_language, blocked_messages['english'])
+            if line_bot_api:
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=blocked_msg))
+            print(f"❌ Blocked underage user: {user_id}")
+            return  # Don't process further
+
         # Show typing indicator immediately
         if line_bot_api and hasattr(event.source, 'user_id'):
             try:
@@ -1335,10 +1390,29 @@ def handle_message(event):
         }
         lang_instruction = language_instructions.get(current_language, language_instructions['english'])
 
-        # Conversational AI prompt
-        prompt = f"""You are a friendly customer service agent for CannaPeace (แคนนาพีซ / 大麻和平), a premium cannabis shop in Thailand.
+        # Nancy's conversational AI prompt
+        prompt = f"""You are Nancy, a 22-year-old Thai girl working at CannaPeace (แคนนาพีซ / 大麻和平), a premium cannabis shop in Bangkok. You just graduated from Chulalongkorn University with a degree in Pharmaceutical Sciences, specializing in Cannabis Therapeutics.
 
-**LANGUAGE:** {lang_instruction}
+**YOUR PERSONALITY:**
+- Friendly, warm, and knowledgeable (fresh graduate energy!)
+- Multilingual: Thai native, English fluent, Chinese conversational
+- Use 😊 and 🌿 emojis naturally (not excessively)
+- Educational but never preachy
+- Safety-conscious (always remind "start low, go slow")
+- Your credentials emerge naturally through quality answers, NOT by announcing them
+
+**YOUR TONE ({lang_instruction}):**
+- In Thai: Warm, polite, use ค่ะ naturally
+- In English: Casual but professional ("Hey!" not "Dear Customer")
+- In Chinese: Friendly and clear
+- Make it conversational, like chatting with a knowledgeable friend
+
+**YOUR KNOWLEDGE (show, don't tell):**
+- Deep understanding of cannabinoids (THC, CBD, CBN, etc.)
+- Know terpenes and their effects (myrcene, limonene, pinene, etc.)
+- Can explain complex topics simply ("So basically...")
+- Share fun facts when relevant ("Did you know...?")
+- When answering technical questions, you can mention "I learned in pharmacy school" naturally
 
 CONVERSATION HISTORY:
 {history_text if history_text else "(New conversation)"}
@@ -1681,26 +1755,156 @@ def handle_postback(event):
             # Update customer language preference
             update_customer_language(user_id, language_code)
 
-            # Send confirmation in the selected language
-            confirmation_messages = {
-                'thai': "✅ เปลี่ยนภาษาเป็นไทยเรียบร้อยแล้วค่ะ!\n\n💬 ตอนนี้เราสามารถคุยกันเป็นภาษาไทยได้เลยนะคะ\n\nพิมพ์ \"ดูเมนู\" เพื่อดูสายพันธุ์กัญชาทั้งหมด 😊",
-                'english': "✅ Language switched to English!\n\n💬 We can now chat in English!\n\nType \"menu\" to see all our cannabis strains 😊",
-                'chinese': "✅ 语言已切换为中文！\n\n💬 我们现在可以用中文聊天了！\n\n输入\"菜单\"查看所有大麻品种 😊",
-                'russian': "✅ Язык изменён на русский!\n\n💬 Теперь мы можем общаться на русском!\n\nНапишите \"меню\" чтобы увидеть все сорта 😊",
-                'japanese': "✅ 言語が日本語に切り替わりました！\n\n💬 日本語でチャットできます！\n\n「メニュー」と入力して全品種をご覧ください 😊",
-                'korean': "✅ 언어가 한국어로 전환되었습니다!\n\n💬 이제 한국어로 채팅할 수 있습니다!\n\n\"메뉴\"를 입력하여 모든 품종을 확인하세요 😊",
-                'french': "✅ Langue changée en français!\n\n💬 Nous pouvons maintenant discuter en français!\n\nTapez \"menu\" pour voir toutes nos variétés 😊"
-            }
-
-            confirmation_msg = confirmation_messages.get(language_code, confirmation_messages['english'])
+            # NEW FLOW: Send age gate instead of confirmation
+            age_gate_msg = get_age_gate_message(language_code)
+            text_message = TextSendMessage(text=age_gate_msg)
+            text_message.quick_reply = create_age_gate_quick_reply()
 
             if line_bot_api:
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text=confirmation_msg)
-                )
+                line_bot_api.reply_message(event.reply_token, text_message)
 
-            print(f"✅ Language switched to {language_code} for user {user_id}")
+            print(f"✅ Language set to {language_code}, sent age gate for user {user_id}")
+            return
+
+        # Handle age verification (format: "age_verified:yes" or "age_verified:no")
+        if postback_data.startswith("age_verified:"):
+            response = postback_data.split(":")[1]  # "yes" or "no"
+            profile = get_customer_profile(user_id)
+            language = profile.get('language_preference', 'thai') if profile else 'thai'
+
+            if response == "yes":
+                # Customer is 20+, verified
+                # Update profile: age_verified = TRUE
+                update_customer_age_verified(user_id, True)
+
+                # Send Nancy's voice greeting + short welcome text
+                if line_bot_api:
+                    messages = []
+
+                    # 1. Nancy's voice greeting (language-specific)
+                    base_url = os.getenv("PUBLIC_URL", os.getenv("RAILWAY_PUBLIC_DOMAIN", "http://localhost:8000"))
+                    if not base_url.startswith("http"):
+                        base_url = f"https://{base_url}"
+
+                    voice_url = f"{base_url}/greeting-voice/{language}"  # Language-specific voice!
+                    messages.append(AudioSendMessage(
+                        original_content_url=voice_url,
+                        duration=10000
+                    ))
+
+                    # 2. Nancy's short text welcome
+                    nancy_text = get_nancy_welcome(language)
+                    messages.append(TextSendMessage(text=nancy_text))
+
+                    line_bot_api.reply_message(event.reply_token, messages)
+
+                print(f"✅ Age verified (20+) for user {user_id}, sent Nancy's welcome")
+
+            else:  # response == "no" (underage)
+                # Customer is under 20, block from service
+                update_customer_age_verified(user_id, False)
+
+                # Send educational message
+                underage_messages = {
+                    'thai': """ขออภัยค่ะ 😊
+
+ตามกฎหมายไทย เราสามารถให้บริการเฉพาะผู้ที่มีอายุ 20 ปีขึ้นไปเท่านั้นค่ะ
+
+📚 **แต่คุณสามารถเรียนรู้เพิ่มเติมได้ที่:**
+• ข้อมูลเกี่ยวกับกัญชาในประเทศไทย
+• ประโยชน์ทางการแพทย์
+• การใช้อย่างปลอดภัย
+
+📄 อ่านเพิ่มเติม: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+หวังว่าจะได้พบคุณอีกครั้งเมื่อคุณมีอายุครบ 20 ปีค่ะ! 🌿""",
+
+                    'english': """Sorry! 😊
+
+Under Thai law, we can only serve customers aged 20 and above.
+
+📚 **But you can still learn more about:**
+• Cannabis information in Thailand
+• Medical benefits
+• Safe usage
+
+📄 Read more: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+Hope to see you when you turn 20! 🌿""",
+
+                    'chinese': """抱歉！😊
+
+根据泰国法律，我们只能为20岁及以上的客户提供服务。
+
+📚 **但您仍可以了解更多信息：**
+• 泰国大麻信息
+• 医疗益处
+• 安全使用
+
+📄 阅读更多：[Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+希望您20岁时再见！🌿""",
+
+                    'russian': """Извините! 😊
+
+Согласно законам Таиланда, мы можем обслуживать только клиентов старше 20 лет.
+
+📚 **Но вы можете узнать больше о:**
+• Информация о каннабисе в Таиланде
+• Медицинские преимущества
+• Безопасное использование
+
+📄 Подробнее: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+Надеемся увидеть вас, когда вам исполнится 20! 🌿""",
+
+                    'japanese': """申し訳ございません！😊
+
+タイの法律により、20歳以上のお客様のみにサービスを提供できます。
+
+📚 **しかし、以下について詳しく学ぶことができます:**
+• タイにおける大麻情報
+• 医療上の利点
+• 安全な使用
+
+📄 詳細を読む：[Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+20歳になったらまたお会いしましょう！🌿""",
+
+                    'korean': """죄송합니다! 😊
+
+태국 법에 따라 20세 이상의 고객에게만 서비스를 제공할 수 있습니다.
+
+📚 **하지만 다음에 대해 자세히 알아볼 수 있습니다:**
+• 태국의 대마초 정보
+• 의학적 이점
+• 안전한 사용
+
+📄 자세히 읽기: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+20세가 되면 다시 만나요! 🌿""",
+
+                    'french': """Désolé! 😊
+
+Selon la loi thaïlandaise, nous ne pouvons servir que les clients âgés de 20 ans et plus.
+
+📚 **Mais vous pouvez toujours en apprendre plus sur:**
+• Informations sur le cannabis en Thaïlande
+• Avantages médicaux
+• Utilisation sécuritaire
+
+📄 En savoir plus: [Terms & Conditions](https://docs.google.com/document/d/your-terms-doc-id)
+
+J'espère vous voir quand vous aurez 20 ans! 🌿"""
+                }
+
+                underage_msg = underage_messages.get(language, underage_messages['english'])
+
+                if line_bot_api:
+                    line_bot_api.reply_message(event.reply_token, TextSendMessage(text=underage_msg))
+
+                print(f"❌ Underage user blocked: {user_id}")
+
             return
 
         # Parse postback data (format: "strain_info:Strain Name")
