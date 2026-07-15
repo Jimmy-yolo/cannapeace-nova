@@ -90,24 +90,24 @@ def create_menu_quick_reply():
     return QuickReply(items=quick_reply_buttons)
 
 def create_language_quick_reply():
-    """Create Quick Reply buttons for language selection (7 languages fit without swiping!)"""
+    """Create COMPACT Quick Reply buttons for language selection (small buttons = more fit on screen!)"""
     languages = [
-        {"code": "thai", "label": "🇹🇭 ไทย", "display": "Thai"},
-        {"code": "english", "label": "🇬🇧 English", "display": "English"},
-        {"code": "chinese", "label": "🇨🇳 中文", "display": "Chinese"},
-        {"code": "russian", "label": "🇷🇺 Русский", "display": "Russian"},
-        {"code": "japanese", "label": "🇯🇵 日本語", "display": "Japanese"},
-        {"code": "korean", "label": "🇰🇷 한국어", "display": "Korean"},
-        {"code": "french", "label": "🇫🇷 Français", "display": "French"}
+        {"code": "thai", "label": "🇹🇭", "display": "ไทย"},
+        {"code": "english", "label": "🇬🇧", "display": "English"},
+        {"code": "chinese", "label": "🇨🇳", "display": "中文"},
+        {"code": "russian", "label": "🇷🇺", "display": "Русский"},
+        {"code": "japanese", "label": "🇯🇵", "display": "日本語"},
+        {"code": "korean", "label": "🇰🇷", "display": "한국어"},
+        {"code": "french", "label": "🇫🇷", "display": "Français"}
     ]
 
     quick_reply_buttons = []
     for lang in languages:
         button = QuickReplyButton(
             action=PostbackAction(
-                label=lang['label'],
+                label=lang['label'],  # Just flag emoji - compact!
                 data=f"language:{lang['code']}",
-                display_text=lang['display']
+                display_text=lang['display']  # Full language name appears in chat
             )
         )
         quick_reply_buttons.append(button)
@@ -604,8 +604,8 @@ I'm your AI chatbot assistant, available 24/7 to help you with:
 • Easy ordering
 • Any questions you have
 
-💬 **What's your preferred language?**
-👇 Choose below to get started!"""
+💬 **Choose your language:**
+👇 Tap a flag below!"""
 
 def get_welcome_message(language: str = 'thai') -> str:
     """
