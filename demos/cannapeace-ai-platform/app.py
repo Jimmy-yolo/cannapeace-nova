@@ -142,7 +142,6 @@ def get_age_gate_message(language: str = 'thai') -> str:
 ตามกฎหมายไทย กัญชาสามารถจำหน่ายได้เฉพาะบุคคลที่มีอายุ 20 ปีขึ้นไปเท่านั้น
 
 **CannaPeace จำหน่ายกัญชาเพื่อ:**
-• การพักผ่อน (Recreational use)
 • การบำบัดแบบดั้งเดิม (Traditional therapy)
 • การใช้งานส่วนบุคคล (Personal use)
 
@@ -160,7 +159,6 @@ def get_age_gate_message(language: str = 'thai') -> str:
 Under Thai law, cannabis may only be sold to individuals aged 20 years or older.
 
 **CannaPeace sells cannabis for:**
-• Recreational use
 • Traditional therapy
 • Personal use
 
@@ -178,7 +176,6 @@ Under Thai law, cannabis may only be sold to individuals aged 20 years or older.
 根据泰国法律，大麻只能出售给20岁或以上的人士。
 
 **CannaPeace 销售大麻用于:**
-• 休闲用途
 • 传统疗法
 • 个人使用
 
@@ -196,7 +193,6 @@ Under Thai law, cannabis may only be sold to individuals aged 20 years or older.
 В соответствии с законодательством Таиланда, каннабис может продаваться только лицам в возрасте 20 лет и старше.
 
 **CannaPeace продает каннабис для:**
-• Рекреационного использования
 • Традиционной терапии
 • Личного использования
 
@@ -214,7 +210,6 @@ Under Thai law, cannabis may only be sold to individuals aged 20 years or older.
 タイの法律により、大麻は20歳以上の方にのみ販売できます。
 
 **CannaPeaceは以下の用途で大麻を販売しています：**
-• レクリエーション用
 • 伝統的な治療
 • 個人使用
 
@@ -232,7 +227,6 @@ Under Thai law, cannabis may only be sold to individuals aged 20 years or older.
 태국 법에 따라 대마초는 20세 이상인 사람에게만 판매할 수 있습니다.
 
 **CannaPeace는 다음 용도로 대마초를 판매합니다:**
-• 레크리에이션 사용
 • 전통 요법
 • 개인 사용
 
@@ -250,7 +244,6 @@ Under Thai law, cannabis may only be sold to individuals aged 20 years or older.
 Selon la loi thaïlandaise, le cannabis ne peut être vendu qu'aux personnes âgées de 20 ans ou plus.
 
 **CannaPeace vend du cannabis pour:**
-• Usage récréatif
 • Thérapie traditionnelle
 • Usage personnel
 
@@ -822,16 +815,16 @@ def get_first_contact_welcome() -> str:
     """
     return """สวัสดี / Hello / 你好 / Привет / こんにちは / 안녕하세요 / Bonjour
 
-🌿 **Welcome to CannaPeace!**
+🌿 **ยินดีต้อนรับสู่ CannaPeace!**
 
-I'm your AI chatbot assistant, available 24/7 to help you with:
-• Cannabis strain menu & info
-• Personalized recommendations
-• Easy ordering
-• Any questions you have
+ฉันเป็นแชทบอท AI ที่พร้อมช่วยคุณตลอด 24/7:
+• เมนูสายพันธุ์กัญชาและข้อมูล
+• คำแนะนำเฉพาะบุคคล
+• สั่งซื้อง่ายๆ
+• ตอบคำถามทุกเรื่อง
 
-💬 **Choose your language:**
-👇 Tap a flag below!"""
+💬 **เลือกภาษาของคุณ:**
+👇 กดธงด้านล่างเลย!"""
 
 def get_welcome_message(language: str = 'thai') -> str:
     """
@@ -2616,41 +2609,64 @@ async def get_attribution_stats():
 
 @app.get("/greeting-voice/{language}")
 async def serve_greeting_voice(language: str = "thai"):
-    """Serve language-specific Nancy greeting voice message"""
-    # Map language codes to voice filenames
+    """Serve language-specific Nancy greeting voice message (M4A preferred, MP3 fallback)"""
+    # Map language codes to base filenames (without extension)
     voice_map = {
-        "thai": "TH.mp3",
-        "english": "EN.mp3",
-        "chinese": "CN.mp3",
-        "russian": "RU.mp3",
-        "japanese": "JPN.mp3",
-        "korean": "KR.mp3",
-        "french": "FR.mp3"
+        "thai": "TH",
+        "english": "EN",
+        "chinese": "CN",
+        "russian": "RU",
+        "japanese": "JPN",
+        "korean": "KR",
+        "french": "FR"
     }
 
-    # Get the appropriate voice file
-    voice_filename = voice_map.get(language, "TH.mp3")  # Default to Thai
-    voice_file = Path("Voices/Greetings") / voice_filename
+    # Get the appropriate voice file base name
+    voice_base = voice_map.get(language, "TH")  # Default to Thai
 
-    if voice_file.exists():
+    # Try M4A first (better for LINE), then MP3
+    voice_file = None
+    media_type = None
+    extension = None
+
+    m4a_file = Path("Voices/Greetings") / f"{voice_base}.m4a"
+    mp3_file = Path("Voices/Greetings") / f"{voice_base}.mp3"
+
+    if m4a_file.exists():
+        voice_file = m4a_file
+        media_type = "audio/m4a"
+        extension = "m4a"
+    elif mp3_file.exists():
+        voice_file = mp3_file
+        media_type = "audio/mpeg"
+        extension = "mp3"
+
+    if voice_file:
         return FileResponse(
             voice_file,
-            media_type="audio/mpeg",
+            media_type=media_type,
             headers={
-                "Content-Disposition": f"inline; filename=nancy_{language}.mp3"
+                "Content-Disposition": f"inline; filename=nancy_{language}.{extension}"
             }
         )
     else:
         # Fallback to Thai if specific language not found
-        fallback_file = Path("Voices/Greetings/TH.mp3")
-        if fallback_file.exists():
-            print(f"⚠️ Voice file for {language} not found, using Thai fallback")
+        thai_m4a = Path("Voices/Greetings/TH.m4a")
+        thai_mp3 = Path("Voices/Greetings/TH.mp3")
+
+        if thai_m4a.exists():
+            print(f"⚠️ Voice file for {language} not found, using Thai M4A fallback")
             return FileResponse(
-                fallback_file,
+                thai_m4a,
+                media_type="audio/m4a",
+                headers={"Content-Disposition": "inline; filename=nancy_thai.m4a"}
+            )
+        elif thai_mp3.exists():
+            print(f"⚠️ Voice file for {language} not found, using Thai MP3 fallback")
+            return FileResponse(
+                thai_mp3,
                 media_type="audio/mpeg",
-                headers={
-                    "Content-Disposition": "inline; filename=nancy_thai.mp3"
-                }
+                headers={"Content-Disposition": "inline; filename=nancy_thai.mp3"}
             )
         else:
             raise HTTPException(status_code=404, detail=f"Voice greeting for {language} not found")
