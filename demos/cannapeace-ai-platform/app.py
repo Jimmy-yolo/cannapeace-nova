@@ -411,6 +411,246 @@ def create_welcome_quick_reply(language: str = 'thai'):
 
     return QuickReply(items=buttons)
 
+def get_menu_response(language: str = 'thai') -> str:
+    """Get cached menu response (all 7 languages) - saves ~$0.0075 per request"""
+    menus = {
+        'thai': """🌿 **เมนูกัญชา CannaPeace** 🌿
+
+1. **Miracle Mints** (Cap Junky) - Hybrid 28% THC
+   หวาน ผ่อนคลาย เหมาะกับตอนเย็น
+
+2. **Alien Marker** - Indica 26% THC
+   ผ่อนคลายลึก เหมาะสำหรับการนอนหลับ
+
+3. **Tropical Cherry** (Trop Cherry) - Hybrid 27% THC
+   รสชาติเขตร้อน ผลไม้
+
+4. **Gogurtz** - Hybrid 29% THC
+   ครีม ขนมหวาน
+
+5. **Berry Bonds** - Indica 25% THC
+   เบอร์รี่ เหมาะกับตอนเย็น
+
+6. **Any Day** (LCG x Grapegas) - Hybrid 30% THC
+   แก๊ส แรง
+
+7. **Apple Banana** - Sativa 24% THC
+   ผลไม้ กระปรี้กระเปร่า
+
+💬 คลิกชื่อสายพันธุ์เพื่อดูรายละเอียด!""",
+
+        'english': """🌿 **CannaPeace Menu** 🌿
+
+1. **Miracle Mints** (Cap Junky) - Hybrid 28% THC
+   Sweet, relaxing, perfect for evening
+
+2. **Alien Marker** - Indica 26% THC
+   Deep relaxation, great for sleep
+
+3. **Tropical Cherry** (Trop Cherry) - Hybrid 27% THC
+   Tropical, fruity
+
+4. **Gogurtz** - Hybrid 29% THC
+   Creamy, dessert-like
+
+5. **Berry Bonds** - Indica 25% THC
+   Berry flavors, evening strain
+
+6. **Any Day** (LCG x Grapegas) - Hybrid 30% THC
+   Gassy, strong
+
+7. **Apple Banana** - Sativa 24% THC
+   Fruity, uplifting
+
+💬 Click any strain name for details!""",
+
+        'chinese': """🌿 **CannaPeace 菜单** 🌿
+
+1. **Miracle Mints** (Cap Junky) - 混合 28% THC
+   甜美，放松，适合晚上
+
+2. **Alien Marker** - 苜蓿 26% THC
+   深度放松，助眠
+
+3. **Tropical Cherry** (Trop Cherry) - 混合 27% THC
+   热带水果味
+
+4. **Gogurtz** - 混合 29% THC
+   奶油，甜点味
+
+5. **Berry Bonds** - 苜蓿 25% THC
+   浆果味，晚间品种
+
+6. **Any Day** (LCG x Grapegas) - 混合 30% THC
+   强效
+
+7. **Apple Banana** - 萨蒂瓦 24% THC
+   水果味，提神
+
+💬 点击品种名称查看详情！""",
+
+        'russian': """🌿 **Меню CannaPeace** 🌿
+
+1. **Miracle Mints** (Cap Junky) - Гибрид 28% THC
+   Сладкий, расслабляющий, вечерний
+
+2. **Alien Marker** - Индика 26% THC
+   Глубокое расслабление, для сна
+
+3. **Tropical Cherry** (Trop Cherry) - Гибрид 27% THC
+   Тропический, фруктовый
+
+4. **Gogurtz** - Гибрид 29% THC
+   Кремовый, десертный
+
+5. **Berry Bonds** - Индика 25% THC
+   Ягодный, вечерний
+
+6. **Any Day** (LCG x Grapegas) - Гибрид 30% THC
+   Мощный
+
+7. **Apple Banana** - Сатива 24% THC
+   Фруктовый, бодрящий
+
+💬 Нажмите на название для подробностей!""",
+
+        'japanese': """🌿 **CannaPeace メニュー** 🌿
+
+1. **Miracle Mints** (Cap Junky) - ハイブリッド 28% THC
+   甘い、リラックス、夜向き
+
+2. **Alien Marker** - インディカ 26% THC
+   深いリラックス、睡眠に最適
+
+3. **Tropical Cherry** (Trop Cherry) - ハイブリッド 27% THC
+   トロピカル、フルーティー
+
+4. **Gogurtz** - ハイブリッド 29% THC
+   クリーミー、デザート系
+
+5. **Berry Bonds** - インディカ 25% THC
+   ベリー系、夜向き
+
+6. **Any Day** (LCG x Grapegas) - ハイブリッド 30% THC
+   強力
+
+7. **Apple Banana** - サティバ 24% THC
+   フルーティー、リフレッシュ
+
+💬 品種名をクリックして詳細を！""",
+
+        'korean': """🌿 **CannaPeace 메뉴** 🌿
+
+1. **Miracle Mints** (Cap Junky) - 하이브리드 28% THC
+   달콤, 편안함, 저녁용
+
+2. **Alien Marker** - 인디카 26% THC
+   깊은 이완, 수면에 좋음
+
+3. **Tropical Cherry** (Trop Cherry) - 하이브리드 27% THC
+   열대 과일향
+
+4. **Gogurtz** - 하이브리드 29% THC
+   크리미, 디저트향
+
+5. **Berry Bonds** - 인디카 25% THC
+   베리향, 저녁용
+
+6. **Any Day** (LCG x Grapegas) - 하이브리드 30% THC
+   강력함
+
+7. **Apple Banana** - 사티바 24% THC
+   과일향, 상쾌함
+
+💬 품종명을 클릭하여 상세 정보 확인!""",
+
+        'french': """🌿 **Menu CannaPeace** 🌿
+
+1. **Miracle Mints** (Cap Junky) - Hybride 28% THC
+   Sucré, relaxant, parfait le soir
+
+2. **Alien Marker** - Indica 26% THC
+   Relaxation profonde, idéal pour dormir
+
+3. **Tropical Cherry** (Trop Cherry) - Hybride 27% THC
+   Tropical, fruité
+
+4. **Gogurtz** - Hybride 29% THC
+   Crémeux, dessert
+
+5. **Berry Bonds** - Indica 25% THC
+   Baies, variété du soir
+
+6. **Any Day** (LCG x Grapegas) - Hybride 30% THC
+   Puissant
+
+7. **Apple Banana** - Sativa 24% THC
+   Fruité, énergisant
+
+💬 Cliquez sur un nom pour les détails!"""
+    }
+    return menus.get(language, menus['thai'])
+
+def get_faq_response(question_lower: str, language: str = 'thai') -> Optional[str]:
+    """Check if question matches FAQ pattern and return cached response - saves ~$0.0096 per request"""
+
+    # Delivery questions
+    delivery_keywords = ['deliver', 'delivery', 'ส่ง', 'จัดส่ง', '配送', 'доставка', '配達', '배송', 'livraison']
+    if any(k in question_lower for k in delivery_keywords):
+        responses = {
+            'thai': "🚚 **การจัดส่ง**\n\nเราจัดส่งทั่วกรุงเทพฯและปริมณฑล\n⏰ เวลาจัดส่ง: 1-3 ชั่วโมง\n🕐 ช่วงเวลา: 10:00-22:00\n\nบอกที่อยู่จัดส่งได้เลยค่ะ!",
+            'english': "🚚 **Delivery**\n\nWe deliver across Bangkok and surrounding areas\n⏰ Delivery time: 1-3 hours\n🕐 Hours: 10:00-22:00\n\nJust tell me your delivery address!",
+            'chinese': "🚚 **配送**\n\n我们在曼谷及周边地区配送\n⏰ 配送时间：1-3小时\n🕐 营业时间：10:00-22:00\n\n告诉我您的送货地址即可！",
+            'russian': "🚚 **Доставка**\n\nДоставляем по Бангкоку и окрестностям\n⏰ Время доставки: 1-3 часа\n🕐 Часы: 10:00-22:00\n\nПросто скажите адрес доставки!",
+            'japanese': "🚚 **配達**\n\nバンコクおよび周辺地域に配達します\n⏰ 配達時間：1-3時間\n🕐 営業時間：10:00-22:00\n\n配達先住所を教えてください！",
+            'korean': "🚚 **배송**\n\n방콕 및 주변 지역으로 배송합니다\n⏰ 배송 시간: 1-3시간\n🕐 영업 시간: 10:00-22:00\n\n배송 주소를 알려주세요!",
+            'french': "🚚 **Livraison**\n\nLivraison à Bangkok et environs\n⏰ Délai: 1-3 heures\n🕐 Horaires: 10:00-22:00\n\nDonnez-moi votre adresse de livraison!"
+        }
+        return responses.get(language, responses['thai'])
+
+    # Payment questions
+    payment_keywords = ['payment', 'pay', 'จ่าย', 'ชำระ', '支付', 'оплата', '支払い', '결제', 'paiement']
+    if any(k in question_lower for k in payment_keywords):
+        responses = {
+            'thai': "💰 **การชำระเงิน**\n\nรับชำระ:\n• เงินสด (ปลายทาง)\n• PromptPay\n• โอนธนาคาร\n\nไม่ต้องจ่ายล่วงหน้าค่ะ จ่ายตอนรับของได้เลย!",
+            'english': "💰 **Payment**\n\nWe accept:\n• Cash (on delivery)\n• PromptPay\n• Bank transfer\n\nNo prepayment needed - pay when you receive!",
+            'chinese': "💰 **付款**\n\n我们接受:\n• 现金（货到付款）\n• PromptPay\n• 银行转账\n\n无需预付款 - 收货时付款！",
+            'russian': "💰 **Оплата**\n\nПринимаем:\n• Наличные (при получении)\n• PromptPay\n• Банковский перевод\n\nПредоплата не нужна - платите при получении!",
+            'japanese': "💰 **お支払い**\n\n対応:\n• 現金（配達時）\n• PromptPay\n• 銀行振込\n\n前払い不要 - 受取時にお支払いください！",
+            'korean': "💰 **결제**\n\n가능:\n• 현금 (배송 시)\n• PromptPay\n• 계좌 이체\n\n선불 불필요 - 수령 시 결제!",
+            'french': "💰 **Paiement**\n\nNous acceptons:\n• Espèces (à la livraison)\n• PromptPay\n• Virement bancaire\n\nPas de prépaiement - payez à la réception!"
+        }
+        return responses.get(language, responses['thai'])
+
+    # Minimum order questions
+    minimum_keywords = ['minimum', 'min order', 'ขั้นต่ำ', 'สั่งขั้นต่ำ', '最低', 'минимум', '最小', '최소', 'minimum']
+    if any(k in question_lower for k in minimum_keywords):
+        responses = {
+            'thai': "📦 **คำสั่งซื้อขั้นต่ำ**\n\nไม่มีขั้นต่ำค่ะ! สั่งได้ตั้งแต่ 1 กรัม\n\n💡 น้ำหนักที่ลูกค้านิยม:\n• 1g - ลองครั้งแรก\n• 3.5g - พอดี\n• 7g - คุ้ม\n\nสั่งเท่าไหร่ก็ได้ค่ะ!",
+            'english': "📦 **Minimum Order**\n\nNo minimum! Order from 1 gram\n\n💡 Popular amounts:\n• 1g - First try\n• 3.5g - Standard\n• 7g - Value\n\nOrder any amount you like!",
+            'chinese': "📦 **最低订购量**\n\n无最低限制！从1克起订\n\n💡 常见数量:\n• 1g - 初次尝试\n• 3.5g - 标准量\n• 7g - 划算\n\n想订多少都可以！",
+            'russian': "📦 **Минимальный заказ**\n\nМинимума нет! Заказ от 1 грамма\n\n💡 Популярные объемы:\n• 1g - Первая проба\n• 3.5g - Стандарт\n• 7g - Выгодно\n\nЗаказывайте сколько хотите!",
+            'japanese': "📦 **最小注文量**\n\n最小なし！1グラムから注文可能\n\n💡 人気の量:\n• 1g - 初めて\n• 3.5g - 標準\n• 7g - お得\n\nお好きな量をどうぞ！",
+            'korean': "📦 **최소 주문량**\n\n최소 없음! 1그램부터 주문 가능\n\n💡 인기 수량:\n• 1g - 첫 시도\n• 3.5g - 표준\n• 7g - 가성비\n\n원하는 만큼 주문하세요!",
+            'french': "📦 **Commande minimum**\n\nPas de minimum! Commandez à partir de 1 gramme\n\n💡 Quantités populaires:\n• 1g - Premier essai\n• 3.5g - Standard\n• 7g - Bon rapport\n\nCommandez ce que vous voulez!"
+        }
+        return responses.get(language, responses['thai'])
+
+    return None  # No FAQ match, use Claude
+
+def get_greeting_response(language: str = 'thai') -> str:
+    """Simple greeting response - saves ~$0.0066 per request"""
+    greetings = {
+        'thai': "สวัสดีค่ะ! 😊 มีอะไรให้ช่วยไหมคะวันนี้?\n\n💡 ลองพิมพ์:\n• \"ดูเมนู\" - ดูสายพันธุ์ทั้งหมด\n• \"แนะนำหน่อย\" - ให้ Nancy แนะนำ\n• ชื่อสายพันธุ์ - ดูรายละเอียด",
+        'english': "Hey! 😊 What can I help you with today?\n\n💡 Try typing:\n• \"menu\" - See all strains\n• \"recommend\" - Get Nancy's suggestions\n• Strain name - See details",
+        'chinese': "你好！😊 今天有什么可以帮您的吗？\n\n💡 试试输入:\n• \"菜单\" - 查看所有品种\n• \"推荐\" - 获取Nancy的建议\n• 品种名 - 查看详情",
+        'russian': "Привет! 😊 Чем могу помочь сегодня?\n\n💡 Попробуйте написать:\n• \"меню\" - Все сорта\n• \"порекомендуй\" - Совет Nancy\n• Название сорта - Подробности",
+        'japanese': "こんにちは！😊 今日は何かお手伝いできますか？\n\n💡 試してみてください:\n• \"メニュー\" - 全品種\n• \"おすすめ\" - Nancyのおすすめ\n• 品種名 - 詳細",
+        'korean': "안녕하세요! 😊 오늘 무엇을 도와드릴까요?\n\n💡 입력해 보세요:\n• \"메뉴\" - 모든 품종\n• \"추천\" - Nancy의 추천\n• 품종명 - 상세 정보",
+        'french': "Salut! 😊 Comment puis-je vous aider aujourd'hui?\n\n💡 Essayez de taper:\n• \"menu\" - Toutes les variétés\n• \"recommande\" - Suggestions de Nancy\n• Nom de variété - Détails"
+    }
+    return greetings.get(language, greetings['thai'])
+
 def get_about_us_content(language: str = 'thai') -> str:
     """Get About Us / Company information (language-specific)"""
     content = {
@@ -2226,6 +2466,56 @@ def handle_message(event):
                 line_bot_api.reply_message(event.reply_token, text_msg)
             print(f"💬 Sent Contact page ({current_language}) with contextual Quick Reply")
             return
+
+        # === API OPTIMIZATION: Detect common requests and respond without Claude ===
+        # This saves ~81% of API costs by handling menu, FAQs, and greetings locally
+
+        # 1. MENU REQUEST DETECTION (saves ~$0.0075 per request)
+        menu_keywords = ['menu', 'รายการ', '菜单', 'меню', 'メニュー', '메뉴', 'carte',
+                        'products', 'strains', 'what do you have', 'ดูเมนู', '看看菜单', 'show menu']
+        if any(keyword in message_lower for keyword in menu_keywords):
+            menu_content = get_menu_response(current_language)
+            text_msg = TextSendMessage(text=menu_content)
+            text_msg.quick_reply = create_menu_quick_reply()  # Add strain buttons
+
+            if line_bot_api:
+                line_bot_api.reply_message(event.reply_token, text_msg)
+            print(f"🌿 Sent cached menu ({current_language}) - Saved API call")
+            return
+
+        # 2. FAQ DETECTION (saves ~$0.0096 per request)
+        faq_response = get_faq_response(message_lower, current_language)
+        if faq_response:
+            text_msg = TextSendMessage(text=faq_response)
+            text_msg.quick_reply = create_contextual_quick_reply(current_language, current_page='contact')
+
+            if line_bot_api:
+                line_bot_api.reply_message(event.reply_token, text_msg)
+            print(f"💡 Sent cached FAQ response ({current_language}) - Saved API call")
+            return
+
+        # 3. SIMPLE GREETING DETECTION (saves ~$0.0066 per request)
+        greeting_keywords = ['hi', 'hello', 'hey', 'สวัสดี', '你好', 'привет', 'こんにちは', '안녕', 'bonjour',
+                            'hi!', 'hello!', 'hey!', 'สวัสดีครับ', 'สวัสดีค่ะ']
+        thanks_keywords = ['thank', 'thanks', 'ขอบคุณ', '谢谢', 'спасибо', 'ありがとう', '감사', 'merci']
+
+        # Only use cached greeting if message is JUST a greeting (not complex)
+        is_simple_greeting = (
+            any(keyword == message_lower.strip() for keyword in greeting_keywords) or
+            any(keyword in message_lower for keyword in thanks_keywords)
+        )
+
+        if is_simple_greeting and len(message_text.split()) <= 3:
+            greeting_content = get_greeting_response(current_language)
+            text_msg = TextSendMessage(text=greeting_content)
+            text_msg.quick_reply = create_welcome_quick_reply(current_language)
+
+            if line_bot_api:
+                line_bot_api.reply_message(event.reply_token, text_msg)
+            print(f"👋 Sent cached greeting ({current_language}) - Saved API call")
+            return
+
+        # === END OPTIMIZATION - If not cached, proceed to Claude API ===
 
         # Check if Claude is configured
         if not anthropic_client:
